@@ -4,7 +4,7 @@ using System.Reflection;
 
 public static partial class Program
 {
-	/*
+	/* Try this command line:
 	 * foo.txt bar.txt /output foobar.cs /id 5860F36D-6207-47F9-9909-62F2B403BBA8 /ips 192.168.0.104 192.168.0.200 /ifstale /count 5 /enum static /indices 5 6 7 8
 	 */
 	[CmdArg("<default>", true, "The input files", ElementName = "infile")]
