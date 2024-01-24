@@ -725,6 +725,7 @@ partial class Program
 			string desc = _GetCmdArgDesc(m.Value);
 			var list = _GetCmdArgIsList(m.Value);
 			var name = _GetCmdArgName(m.Value);
+			var type = _CmdArgGetType(m.Value);
 			if(!string.IsNullOrWhiteSpace(desc))
 			{
 				descmap.Add(m.Key, desc);
@@ -745,7 +746,11 @@ partial class Program
 
 				sba.Append('/');
 				sba.Append(attr.Name);
-				sba.Append(' ');
+				// doesn't have arguments:
+				if (type != typeof(bool))
+				{
+					sba.Append(' ');
+				}
 			} else
 			{
 				if ((m.Key.Length ) > maxNameLen)
@@ -816,7 +821,7 @@ partial class Program
 				}
 				sb.Append(sba);
 				sba.Clear();
-			} else
+			} else if(type!=typeof(bool))
 			{
 				sba.Append('<');
 				sba.Append(itemName);

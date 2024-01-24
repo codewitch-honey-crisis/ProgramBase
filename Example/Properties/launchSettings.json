@@ -3,6 +3,10 @@
     "Example": {
       "commandName": "Project",
       "commandLineArgs": "\"foo.txt\" \"bar.txt\""
+    },
+    "Using": {
+      "commandName": "Project",
+      "commandLineArgs": "/?"
     }
   }
 }
