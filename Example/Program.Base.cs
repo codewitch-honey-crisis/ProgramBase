@@ -696,9 +696,13 @@ partial class Program
 	/// <summary>
 	/// Prints the Usage screen
 	/// </summary>
-	/// <param name="width">The width of the display, in characters</param>
-	internal static void PrintUsage(int width = 60)
+	/// <param name="width">The width of the display, in characters. Defaults to approximate the console window width</param>
+	internal static void PrintUsage(int width = 0)
 	{
+		if (width == 0)
+		{
+			width = Console.WindowWidth / 2;
+		}
 		var mappings = _CmdArgsReflect();
 		TextWriter w = Console.Error;
 		var sb = new StringBuilder();
@@ -708,7 +712,7 @@ partial class Program
 		sb.Append(" ");
 		var descmap = new Dictionary<string, string>();
 		var remaining = width - sb.Length;
-		int maxNameLen = 0;
+		int maxNameLen = 2;
 		foreach ( var m in mappings)
 		{
 			sba.Clear();
@@ -928,12 +932,16 @@ partial class Program
 	/// Performs word wrapping
 	/// </summary>
 	/// <param name="text">The text to wrap</param>
-	/// <param name="width">The width of the display</param>
+	/// <param name="width">The width of the display. Tries to approximate if zero</param>
 	/// <param name="indent">The indent for successive lines, in number of spaces</param>
 	/// <param name="startOffset">The starting offset of the first line where the text begins</param>
 	/// <returns></returns>
-	public static string WordWrap(string text, int width, int indent=0, int startOffset=0)
+	public static string WordWrap(string text, int width=0, int indent=0, int startOffset=0)
 	{
+		if (width == 0)
+		{
+			width = Console.WindowWidth / 2;
+		}
 		string[] originalLines = text.Split(new string[] { " " },
 			StringSplitOptions.None);
 
@@ -955,6 +963,7 @@ partial class Program
 					{
 						result.Append(new string(' ', indent));
 					}
+					first = false;
 					
 				}
 				result.Append(actualLine.ToString());
@@ -975,9 +984,9 @@ partial class Program
 				}
 			}
 			result.Append(actualLine.ToString());
-			first = false;
+	
 		}
-		return result.ToString();
+		return result.ToString().TrimEnd();
 	}
 	public static int Main(string[] args)
 	{
