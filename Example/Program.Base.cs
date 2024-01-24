@@ -1,20 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Metrics;
-using System.Dynamic;
 using System.Globalization;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Text;
-
+/// <summary>
+/// Provides basic information about the executing program
+/// </summary>
 public struct ProgramInfo
 {
+	/// <summary>
+	/// The codebase of the executable
+	/// </summary>
 	public readonly string CodeBase;
+	/// <summary>
+	/// The filename, used for the using screen
+	/// </summary>
 	public readonly string Filename;
+	/// <summary>
+	/// The proper name of the assembly
+	/// </summary>
 	public readonly string Name;
+	/// <summary>
+	/// A description of the assembly used for the using screen
+	/// </summary>
 	public readonly string Description;
+	/// <summary>
+	/// The version of the assembly used for the using screen
+	/// </summary>
 	public readonly Version Version;
 	public ProgramInfo(string codeBase, string filename, string name, string description, Version version)
 	{
@@ -25,17 +38,42 @@ public struct ProgramInfo
 		Version = version;
 	}
 }
+/// <summary>
+/// Indicates the field or property is a command line argument
+/// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field,AllowMultiple =false,Inherited = true)]
 public sealed class CmdArgAttribute : System.Attribute
 {
+	/// <summary>
+	/// The name on the command line or &lt;default&gt; for the first unnamed argument
+	/// </summary>
 	public string Name { get; set; } = null;
+	/// <summary>
+	/// True if it is required
+	/// </summary>
 	public bool Required { get; set; } = false;
+	/// <summary>
+	/// A description of the field for the using screen
+	/// </summary>
 	public string Description { get; set; } = null;
+	/// <summary>
+	/// The name for value items
+	/// </summary>
 	public string ElementName { get; set; } = null;
+	/// <summary>
+	/// Constructs a new instance
+	/// </summary>
+	/// <param name="name">The name on the command line or &lt;default&gt; for the first unnamed argument</param>
+	/// <param name="required">True if it is required</param>
+	/// <param name="description">A description of the field for the using screen</param>
+	/// <param name="elementName">The name for value items</param>
 	public CmdArgAttribute(string name = null, bool required = false, string description = null, string elementName = null) { Name = name; Required = required; Description = description; ElementName = elementName; }
 }
 partial class Program
 {
+	/// <summary>
+	/// Information about the executing assembly
+	/// </summary>
 	internal static readonly ProgramInfo Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(),_GetVersion());
 	
 	const string _ProgressTwirl = "-\\|/";
@@ -43,7 +81,12 @@ partial class Program
 	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
 	const string _ProgressBackOne = "\b";
 	static readonly StringBuilder _ProgressBuffer = new StringBuilder();
-
+	/// <summary>
+	/// Writes an indeterminate progress indicator to the screen
+	/// </summary>
+	/// <param name="progress">The integer progress indicator. Just keep incrementing this value.</param>
+	/// <param name="update">False if this is the initial call, otherwise true</param>
+	/// <param name="output">The <see cref="TextWriter"/> to write to</param>
 	internal static void WriteProgress(int progress, bool update, TextWriter output)
 	{
 		_ProgressBuffer.Clear();
@@ -52,6 +95,12 @@ partial class Program
 		_ProgressBuffer.Append(_ProgressTwirl[progress % _ProgressTwirl.Length]);
 		output.Write(_ProgressBuffer.ToString());
 	}
+	/// <summary>
+	/// Writes a progress bar indicator to the screen
+	/// </summary>
+	/// <param name="progress">The integer progress indicator. Should be 0 to 100</param>
+	/// <param name="update">False if this is the initial call, otherwise true</param>
+	/// <param name="output">The <see cref="TextWriter"/> to write to</param>
 	internal static void WriteProgressBar(int percent, bool update, TextWriter output)
 	{
 		_ProgressBuffer.Clear();
@@ -644,6 +693,10 @@ partial class Program
 		}
 		return null;
 	}
+	/// <summary>
+	/// Prints the Usage screen
+	/// </summary>
+	/// <param name="width">The width of the display, in characters</param>
 	internal static void PrintUsage(int width = 60)
 	{
 		var mappings = _CmdArgsReflect();
@@ -827,7 +880,7 @@ partial class Program
 		}
 		if(!string.IsNullOrWhiteSpace(Info.Description))
 		{
-			w.WriteLine(WrapText(Info.Description,width,4));
+			w.WriteLine(WordWrap(Info.Description,width,4));
 			w.WriteLine();
 		} else if(printedName)
 		{
@@ -846,13 +899,19 @@ partial class Program
 				w.Write(new string(' ', maxNameLen + 2 - m.Key.Length));
 			}
 			
-			w.WriteLine(WrapText(_GetCmdArgDesc(m.Value), width, 4, maxNameLen + 2).Trim());
+			w.WriteLine(WordWrap(_GetCmdArgDesc(m.Value), width, 4, maxNameLen + 2).Trim());
 		}
 		w.Write("/?");
 		w.Write(new string(' ', maxNameLen));
-		w.WriteLine(WrapText("Displays this screen and exits", width, 4, maxNameLen + 2).Trim());
+		w.WriteLine(WordWrap("Displays this screen and exits", width, 4, maxNameLen + 2).Trim());
 		w.WriteLine();
 	}
+	/// <summary>
+	/// Indicates whether outputfile doesn't exist or is old
+	/// </summary>
+	/// <param name="inputfile">The master file to check the date of</param>
+	/// <param name="outputfile">The output file which is compared against <paramref name="inputfile"/></param>
+	/// <returns>True if <paramref name="outputfile"/> doesn't exist or is older than <paramref name="inputfile"/></returns>
 	public static bool IsStale(string inputfile, string outputfile)
 	{
 		var result = true;
@@ -865,7 +924,15 @@ partial class Program
 		catch { }
 		return result;
 	}
-	public static string WrapText(string text, int width, int indent=0, int startOffset=0)
+	/// <summary>
+	/// Performs word wrapping
+	/// </summary>
+	/// <param name="text">The text to wrap</param>
+	/// <param name="width">The width of the display</param>
+	/// <param name="indent">The indent for successive lines, in number of spaces</param>
+	/// <param name="startOffset">The starting offset of the first line where the text begins</param>
+	/// <returns></returns>
+	public static string WordWrap(string text, int width, int indent=0, int startOffset=0)
 	{
 		string[] originalLines = text.Split(new string[] { " " },
 			StringSplitOptions.None);
