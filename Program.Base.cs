@@ -68,7 +68,7 @@ public sealed class CmdArgAttribute : System.Attribute
 }
 partial class Program
 {
-	private sealed class DemandTextWriter : TextWriter
+	private sealed class _DemandTextWriter : TextWriter
 	{
 		readonly string _name;
 		StreamWriter? _writer = null;
@@ -88,7 +88,7 @@ partial class Program
 				return _writer.Encoding;
 			}
 		}
-		public DemandTextWriter(string path)
+		public _DemandTextWriter(string path)
 		{
 			_name = path;
 		}
@@ -96,6 +96,18 @@ partial class Program
 			get {
 				return _name;
 			}
+		}
+		protected override void Dispose(bool disposing)
+		{
+			if(disposing)
+			{
+				if(_writer != null)
+				{
+					_writer.Close();
+					_writer = null;
+				}
+			}
+			base.Dispose(disposing);	
 		}
 		public override void Close()
 		{
@@ -451,7 +463,7 @@ partial class Program
 						}
 						else if (iswriter == true)
 						{
-							v = new DemandTextWriter(arg);
+							v = new _DemandTextWriter(arg);
 						}
 						else
 						if (conv == null)
@@ -485,7 +497,7 @@ partial class Program
 						}
 						else if (iswriter == true)
 						{
-							v = new DemandTextWriter(arg);
+							v = new _DemandTextWriter(arg);
 						}
 						else
 						if (conv == null)
@@ -518,7 +530,7 @@ partial class Program
 					}
 					else if (iswriter)
 					{
-						_CmdArgSetValue(defaultMember, new DemandTextWriter(arg));
+						_CmdArgSetValue(defaultMember, new _DemandTextWriter(arg));
 					}
 					else if ("" == o as string)
 					{
@@ -662,7 +674,7 @@ partial class Program
 						}
 						else if (iswriter)
 						{
-							v = new DemandTextWriter(sarg);
+							v = new _DemandTextWriter(sarg);
 						}
 						else
 						if (conv == null)
@@ -716,7 +728,7 @@ partial class Program
 			{
 				if (argi == args.Length - 1)
 					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
-				_CmdArgSetValue(member, new DemandTextWriter(args[++argi]));
+				_CmdArgSetValue(member, new _DemandTextWriter(args[++argi]));
 			}
 			else if (isstr)
 			{
@@ -1254,7 +1266,7 @@ partial class Program
 	/// <returns>The filename, if available, or null</returns>
 	public static string? GetFilename(TextWriter t)
 	{
-		var dtw = t as DemandTextWriter;
+		var dtw = t as _DemandTextWriter;
 		if (dtw != null)
 		{
 			return dtw.Name;
@@ -1375,7 +1387,7 @@ partial class Program
 					foreach (var v in vals)
 					{
 						var disp = v as IDisposable;
-						if (v != null != !object.ReferenceEquals(v, Console.In) && !object.ReferenceEquals(v, Console.Out) && !object.ReferenceEquals(v, Console.Error))
+						if (disp != null && !object.ReferenceEquals(v, Console.In) && !object.ReferenceEquals(v, Console.Out) && !object.ReferenceEquals(v, Console.Error))
 						{
 							disp!.Dispose();
 						}
