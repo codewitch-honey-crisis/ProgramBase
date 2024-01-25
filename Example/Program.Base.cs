@@ -338,14 +338,7 @@ partial class Program
 						}
 					}
 				}
-				TypeConverter conv = TypeDescriptor.GetConverter(et);
-				if (conv != null)
-				{
-					if (!conv.CanConvertFrom(typeof(string)))
-					{
-						conv = null;
-					}
-				}
+				TypeConverter conv = _CmdArgGetConv(defaultMember,et);
 				if (conv == null && !isarr && coladd == null)
 				{
 					var bt = et;
@@ -362,6 +355,7 @@ partial class Program
 						}
 						bt = bt.BaseType;
 					}
+					
 				}
 				if (!isarr && coladd == null && !(o is string) && conv == null)
 					throw new InvalidProgramException(string.Format("Type for {0} must be string or a collection, array or convertible type", defaultname));
@@ -485,7 +479,7 @@ partial class Program
 					}
 				}
 			}
-			TypeConverter conv = TypeDescriptor.GetConverter(et);
+			TypeConverter conv = _CmdArgGetConv(member, et);
 			if (conv != null)
 			{
 				if (!conv.CanConvertFrom(typeof(string)))
@@ -496,7 +490,7 @@ partial class Program
 			if (conv == null)
 			{
 				var bt = et;
-				while (parse == null && bt != null)
+				while (parse == null && bt != null )
 				{
 					try
 					{
@@ -509,6 +503,7 @@ partial class Program
 					}
 					bt = bt.BaseType;
 				}
+				
 			}
 			if (isarr || coladd != null)
 			{
@@ -646,6 +641,32 @@ partial class Program
 			return fi.GetValue(null);
 		}
 		return null;
+	}
+	private static TypeConverter _CmdArgGetConv(MemberInfo m, Type et)
+	{
+		TypeConverter result = null;
+		var attr = m.GetCustomAttribute(typeof(TypeConverterAttribute), true) as TypeConverterAttribute;
+		if(attr!=null)
+		{
+			Type t = Type.GetType(attr.ConverterTypeName);
+			if (t != null)
+			{
+				result = Activator.CreateInstance(t) as TypeConverter;
+				if(!result.CanConvertFrom(typeof(string)))
+				{
+					result = null;
+				}
+			}
+		}
+		if(result==null)
+		{
+			result = TypeDescriptor.GetConverter(et);
+			if (!result.CanConvertFrom(typeof(string)))
+			{
+				result = null;
+			}
+		}
+		return result;
 	}
 	private static object _CmdArgGetValue(MemberInfo m)
 	{
