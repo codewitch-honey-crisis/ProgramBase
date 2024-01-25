@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Misc", "Misc", "{5CF2C52F-8
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wrap", "wrap\wrap.csproj", "{D7F118D9-0862-4A20-BD39-5B93D3DA0C49}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "wrap.DNF", "wrap.DNF\wrap.DNF.csproj", "{6FCFB103-59C6-4ACC-994C-1568B386AD7D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{D7F118D9-0862-4A20-BD39-5B93D3DA0C49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7F118D9-0862-4A20-BD39-5B93D3DA0C49}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7F118D9-0862-4A20-BD39-5B93D3DA0C49}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FCFB103-59C6-4ACC-994C-1568B386AD7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FCFB103-59C6-4ACC-994C-1568B386AD7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FCFB103-59C6-4ACC-994C-1568B386AD7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FCFB103-59C6-4ACC-994C-1568B386AD7D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

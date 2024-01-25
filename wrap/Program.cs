@@ -1,4 +1,6 @@
-﻿internal partial class Program
+﻿using System;
+using System.IO;
+internal partial class Program
 {
 	[CmdArg(Name = "<default>", Description = "The input text file to wrap. Defaults to <stdin>", ElementName = "infile")]
 	static TextReader Input = Console.In;

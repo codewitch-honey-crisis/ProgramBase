@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
@@ -381,8 +382,8 @@ partial class Program
 						{
 
 							et = et.GenericTypeArguments[0];
-							coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new Type[] { et });
-							colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, Type.EmptyTypes);
+							coladd = it.GetMethod( "Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null,new Type[] { et },null);
+							colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes,null);
 						}
 					}
 				}
@@ -401,7 +402,7 @@ partial class Program
 						}
 						catch (AmbiguousMatchException)
 						{
-							parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string) });
+							parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(string) },null) ;
 
 						}
 						bt = bt.BaseType;
@@ -574,8 +575,8 @@ partial class Program
 					if (typeof(ICollection<>) == tdef)
 					{
 						et = et.GenericTypeArguments[0];
-						coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new Type[] { et });
-						colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, Type.EmptyTypes);
+						coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,null, new Type[] { et },null);
+						colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null,Type.EmptyTypes,null);
 						break;
 
 					}
@@ -603,7 +604,7 @@ partial class Program
 					}
 					catch (AmbiguousMatchException)
 					{
-						parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string) });
+						parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null,new Type[] { typeof(string) },null);
 
 					}
 					bt = bt.BaseType;
