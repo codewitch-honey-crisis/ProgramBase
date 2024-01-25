@@ -1139,7 +1139,7 @@ partial class Program
 				w.Write(new string(' ', maxNameLen + 2 - m.Key.Length));
 			}
 			var d = _GetCmdArgDesc(m.Value);
-			if (string.IsNullOrWhiteSpace(d))
+			if (!string.IsNullOrWhiteSpace(d))
 			{
 				w.WriteLine(WordWrap(d, width, 4, maxNameLen + 2).Trim());
 			} else
