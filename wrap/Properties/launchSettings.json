@@ -2,7 +2,7 @@
   "profiles": {
     "wrap": {
       "commandName": "Project",
-      "commandLineArgs": "\"..\\..\\..\\foo.txt\""
+      "commandLineArgs": "\"..\\..\\..\\foo.txt\" /output \"..\\..\\..\\fooWrapped.txt\" /ifstale"
     },
     "wrap usage": {
       "commandName": "Project",

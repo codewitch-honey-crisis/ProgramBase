@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
@@ -73,6 +74,54 @@ public sealed class CmdArgAttribute : System.Attribute
 }
 partial class Program
 {
+	private sealed class DemandTextWriter : TextWriter
+	{
+		readonly string _name;
+		StreamWriter _writer = null;
+		void EnsureWriter()
+		{
+			if (_writer == null)
+			{
+				_writer = new StreamWriter(_name, false);
+			}
+		}
+		public override Encoding Encoding {
+			get {
+				if(_writer==null)
+				{
+					return Encoding.UTF8;
+				}
+				return _writer.Encoding;
+			}
+		}
+		public DemandTextWriter(string path)
+		{
+			_name = path;
+		}
+		public string Name {
+			get {
+				return _name;
+			}
+		}
+		public override void Close()
+		{
+			if(_writer!=null)
+			{
+				_writer.Close();
+			}
+			base.Close();
+		}
+		public override void Write([AllowNull] string value)
+		{
+			EnsureWriter();
+			_writer.Write(value);
+		}
+		public override void WriteLine([AllowNull] string value)
+		{
+			EnsureWriter();
+			_writer.WriteLine(value);
+		}
+	}
 	/// <summary>
 	/// Information about the executing assembly
 	/// </summary>
@@ -407,7 +456,7 @@ partial class Program
 							}
 						} else if(iswriter==true)
 						{
-							v = new StreamWriter(arg, false);
+							v = new DemandTextWriter(arg);
 						} else
 						if (conv == null)
 						{
@@ -440,7 +489,7 @@ partial class Program
 						}
 						else if (iswriter == true)
 						{
-							v = new StreamWriter(arg, false);
+							v = new DemandTextWriter(arg);
 						}
 						else
 						if (conv == null)
@@ -471,7 +520,7 @@ partial class Program
 						_CmdArgSetValue(defaultMember, reader);
 					} else if(iswriter)
 					{
-						_CmdArgSetValue(defaultMember, new StreamWriter(arg,false));
+						_CmdArgSetValue(defaultMember, new DemandTextWriter(arg));
 					}
 					else if ("" == o as string)
 					{
@@ -614,7 +663,7 @@ partial class Program
 							}
 						} else if(iswriter)
 						{
-							v = new StreamWriter(sarg, false);
+							v = new DemandTextWriter(sarg);
 						} else
 						if (conv == null)
 						{
@@ -665,7 +714,7 @@ partial class Program
 			{
 				if (argi == args.Length - 1)
 					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
-				_CmdArgSetValue(member, new StreamWriter(args[++argi],false));
+				_CmdArgSetValue(member, new DemandTextWriter(args[++argi]));
 			}
 			else if (isstr)
 			{
@@ -1119,6 +1168,34 @@ partial class Program
 		catch { }
 		return result;
 	}
+	/// <summary>
+	/// Indicates whether outputfile doesn't exist or is old
+	/// </summary>
+	/// <param name="input">The input reader to check the date of</param>
+	/// <param name="output">The output writer which is compared against <paramref name="input"/></param>
+	/// <returns>True if the file behind <paramref name="output"/> doesn't exist or is older than the file behind <paramref name="input"/> or if any are not files.</returns>
+	public static bool IsStale(TextReader input, TextWriter output)
+	{
+		var result = true;
+		var inputfile = GetFilename(input);
+		if(inputfile == null)
+		{
+			return result;
+		}
+		var outputfile = GetFilename(output);
+		if (outputfile == null)
+		{
+			return result;
+		}
+		// File.Exists doesn't always work right
+		try
+		{
+			if (File.GetLastWriteTimeUtc(outputfile) >= File.GetLastWriteTimeUtc(inputfile))
+				result = false;
+		}
+		catch { }
+		return result;
+	}
 	public static string GetFilename(TextReader t)
 	{
 		var sr = t as StreamReader;
@@ -1139,6 +1216,11 @@ partial class Program
     }
 	public static string GetFilename(TextWriter t)
 	{
+		var dtw = t as DemandTextWriter;
+		if(dtw!=null)
+		{
+			return dtw.Name;
+		}
 		var sw = t as StreamWriter;
 		string result = null;
 		if (sw != null)
