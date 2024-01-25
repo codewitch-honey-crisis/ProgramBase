@@ -362,7 +362,7 @@ partial class Program
 					}
 
 				}
-				if (!isarr && coladd == null && !(o is string) && conv == null)
+				if (!isarr && coladd == null && !isreader && !iswriter && !(o is string) && conv == null)
 					throw new InvalidProgramException(string.Format("Type for {0} must be string or a collection, array or convertible type", defaultname));
 				if (isarr)
 				{

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "wrap": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\foo.txt\""
+    }
+  }
+}
