@@ -13,7 +13,7 @@ static partial class Program
 	[CmdArg("id", false, "The guid id", ElementName = "guid")]
 	public static Guid Id = Guid.Empty;
 	[CmdArg("ips", false, "The ip addesses", ElementName = "address")]
-	public static List<IPAddress> Ips = null;
+	public static List<IPAddress> Ips = new List<IPAddress>() { IPAddress.Any };
 	[CmdArg("ifstale", false, "Only regenerate if input has changed")]
 	public static bool IfStale = false;
 	[CmdArg("count", false, "The count", ElementName = "number")]

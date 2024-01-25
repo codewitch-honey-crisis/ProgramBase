@@ -318,6 +318,7 @@ partial class Program
 				Type et = _CmdArgGetType(defaultMember);
 				var isarr = et.IsArray;
 				MethodInfo coladd = null;
+				MethodInfo colclear = null;
 				MethodInfo parse = null;
 				if (isarr)
 				{
@@ -334,7 +335,7 @@ partial class Program
 
 							et = et.GenericTypeArguments[0];
 							coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new Type[] { et });
-
+							colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, Type.EmptyTypes);
 						}
 					}
 				}
@@ -359,7 +360,18 @@ partial class Program
 				}
 				if (!isarr && coladd == null && !(o is string) && conv == null)
 					throw new InvalidProgramException(string.Format("Type for {0} must be string or a collection, array or convertible type", defaultname));
-
+				if(isarr)
+				{
+					o = Array.CreateInstance(et, 0);
+					_CmdArgSetValue(defaultMember, o);
+				}
+				if(colclear!=null)
+				{
+					if (o != null)
+					{
+						colclear.Invoke(o, null);
+					}
+				} 
 				for (; argi < args.Length; ++argi)
 				{
 					var arg = args[argi];
@@ -457,6 +469,7 @@ partial class Program
 			o = _CmdArgGetValue(member);
 			var isarr = et.IsArray;
 			MethodInfo coladd = null;
+			MethodInfo colclear = null;
 			MethodInfo parse = null;
 			var isbool = et == typeof(bool);
 			var isstr = et == typeof(string);
@@ -474,6 +487,7 @@ partial class Program
 					{
 						et = et.GenericTypeArguments[0];
 						coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new Type[] { et });
+						colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, Type.EmptyTypes);
 						break;
 
 					}
@@ -504,6 +518,18 @@ partial class Program
 					bt = bt.BaseType;
 				}
 				
+			}
+			if (isarr)
+			{
+				o = Array.CreateInstance(et, 0);
+				_CmdArgSetValue(member, o);
+			}
+			if (colclear != null)
+			{
+				if (o != null)
+				{
+					colclear.Invoke(o, null);
+				}
 			}
 			if (isarr || coladd != null)
 			{
