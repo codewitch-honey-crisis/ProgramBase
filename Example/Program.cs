@@ -7,17 +7,17 @@ using System.Reflection;
 static partial class Program
 {
 	[CmdArg("<default>", true, "The input files", ElementName = "infile")]
-	public static string[] Input = null;
+	public static TextReader[] Input = null;// new TextReader[] { Console.In };
 	[CmdArg("output", false, "The output file", ElementName = "outfile")]
-	public static string Output = null;
+	public static TextWriter Output = Console.Out;
 	[CmdArg("id", false, "The guid id", ElementName = "guid")]
 	public static Guid Id = Guid.Empty;
 	[CmdArg("ips", false, "The ip addesses", ElementName = "address")]
 	public static List<IPAddress> Ips = new List<IPAddress>() { IPAddress.Any };
 	[CmdArg("ifstale", false, "Only regenerate if input has changed")]
 	public static bool IfStale = false;
-	[CmdArg("count", false, "The count", ElementName = "number")]
-	public static int Count = 0;
+	[CmdArg("width", false, "The width to wrap to", ElementName = "chars")]
+	public static int Width = Console.WindowWidth/2;
 	[CmdArg("enum", false, "The binding flags", ElementName = "flag")]
 	public static List<BindingFlags> Enum = null;
 	[CmdArg("indices", false, "The indices", ElementName = "index")]
@@ -38,7 +38,8 @@ static partial class Program
 			Thread.Sleep(10);
 		}
 		Console.WriteLine();
-		Console.WriteLine(WordWrap("fringilla phasellus faucibus scelerisque eleifend donec pretium vulputate sapien nec sagittis aliquam malesuada bibendum arcu vitae elementum curabitur vitae nunc sed velit dignissim sodales ut eu sem integer vitae justo eget magna fermentum iaculis eu non diam phasellus vestibulum lorem sed risus ultricies tristique nulla aliquet enim tortor at auctor",40,0));
-		
+		foreach (var reader in Input) {
+			Output.Write(WordWrap(reader.ReadToEnd(), Width, 0));
+		}
 	}
 }

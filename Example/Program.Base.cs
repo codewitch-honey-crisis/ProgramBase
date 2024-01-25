@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Reflection.PortableExecutable;
 using System.Text;
 /// <summary>
 /// Provides basic information about the executing program
@@ -41,7 +42,7 @@ public struct ProgramInfo
 /// <summary>
 /// Indicates the field or property is a command line argument
 /// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field,AllowMultiple =false,Inherited = true)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
 public sealed class CmdArgAttribute : System.Attribute
 {
 	/// <summary>
@@ -74,8 +75,8 @@ partial class Program
 	/// <summary>
 	/// Information about the executing assembly
 	/// </summary>
-	internal static readonly ProgramInfo Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(),_GetVersion());
-	
+	internal static readonly ProgramInfo Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetVersion());
+
 	const string _ProgressTwirl = "-\\|/";
 	const char _ProgressBlock = '■';
 	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
@@ -126,9 +127,9 @@ partial class Program
 		}
 		catch
 		{
-			if (Environment.CommandLine[0]=='\"')
+			if (Environment.CommandLine[0] == '\"')
 			{
-				return Environment.CommandLine.Substring(1, Environment.CommandLine.IndexOf('\"',1)-1);
+				return Environment.CommandLine.Substring(1, Environment.CommandLine.IndexOf('\"', 1) - 1);
 			}
 			return Environment.CommandLine.Substring(0, Environment.CommandLine.IndexOf(' '));
 		}
@@ -226,7 +227,7 @@ partial class Program
 			return false;
 		}
 		var t = _CmdArgGetType(member);
-		if(t.IsArray)
+		if (t.IsArray)
 		{
 			return true;
 		}
@@ -292,7 +293,7 @@ partial class Program
 	}
 	private static void _CmdArgsCrack(string[] args, Dictionary<string, MemberInfo> mappings)
 	{
-		if(mappings.Count==0 && args.Length>0)
+		if (mappings.Count == 0 && args.Length > 0)
 		{
 			throw new ArgumentException(string.Format("Unrecognized argument {0}", args[0]));
 		}
@@ -339,7 +340,10 @@ partial class Program
 						}
 					}
 				}
-				TypeConverter conv = _CmdArgGetConv(defaultMember,et);
+				var isreader = typeof(TextReader) == et;
+				var iswriter = typeof(TextWriter) == et;
+
+				TypeConverter conv = _CmdArgGetConv(defaultMember, et);
 				if (conv == null && !isarr && coladd == null)
 				{
 					var bt = et;
@@ -356,22 +360,22 @@ partial class Program
 						}
 						bt = bt.BaseType;
 					}
-					
+
 				}
 				if (!isarr && coladd == null && !(o is string) && conv == null)
 					throw new InvalidProgramException(string.Format("Type for {0} must be string or a collection, array or convertible type", defaultname));
-				if(isarr)
+				if (isarr)
 				{
 					o = Array.CreateInstance(et, 0);
 					_CmdArgSetValue(defaultMember, o);
 				}
-				if(colclear!=null)
+				if (colclear != null)
 				{
 					if (o != null)
 					{
 						colclear.Invoke(o, null);
 					}
-				} 
+				}
 				for (; argi < args.Length; ++argi)
 				{
 					var arg = args[argi];
@@ -391,6 +395,19 @@ partial class Program
 						}
 						object v;
 						v = arg;
+						if(isreader==true)
+						{
+							try
+							{
+								v = new StreamReader(arg);
+							} catch(Exception e)
+							{
+								throw new ArgumentException("File not found", arg, e);
+							}
+						} else if(iswriter==true)
+						{
+							v = new StreamWriter(arg, false);
+						} else
 						if (conv == null)
 						{
 							if (parse != null)
@@ -416,6 +433,15 @@ partial class Program
 						}
 						object v;
 						v = arg;
+						if (isreader == true)
+						{
+							v = new StreamReader(arg);
+						}
+						else if (iswriter == true)
+						{
+							v = new StreamWriter(arg, false);
+						}
+						else
 						if (conv == null)
 						{
 							if (parse != null)
@@ -429,6 +455,22 @@ partial class Program
 							v = conv.ConvertFromInvariantString(arg);
 						}
 						coladd.Invoke(o, new object[] { v });
+					} else if(isreader)
+					{
+
+						StreamReader reader;
+						try
+						{
+							reader = new StreamReader(arg);
+						}
+						catch(Exception ex)
+						{
+							throw new ArgumentException("The file could could not be found", arg, ex);
+						}
+						_CmdArgSetValue(defaultMember, reader);
+					} else if(iswriter)
+					{
+						_CmdArgSetValue(defaultMember, new StreamWriter(arg,false));
 					}
 					else if ("" == o as string)
 					{
@@ -459,14 +501,14 @@ partial class Program
 				throw new ArgumentException("Invalid switch /{0}", arg);
 			MemberInfo member;
 			object o;
-			
+
 			if (!mappings.TryGetValue(arg, out member))
 			{
 				throw new InvalidProgramException(string.Format("Unknown switch /{0}", arg));
 			}
-			
+
 			Type et = _CmdArgGetType(member);
-			o = _CmdArgGetValue(member);
+			o = _CmdArgGetValueRaw(member);
 			var isarr = et.IsArray;
 			MethodInfo coladd = null;
 			MethodInfo colclear = null;
@@ -493,6 +535,9 @@ partial class Program
 					}
 				}
 			}
+			var isreader = typeof(TextReader) == et;
+			var iswriter = typeof(TextWriter) == et;
+
 			TypeConverter conv = _CmdArgGetConv(member, et);
 			if (conv != null)
 			{
@@ -504,7 +549,7 @@ partial class Program
 			if (conv == null)
 			{
 				var bt = et;
-				while (parse == null && bt != null )
+				while (parse == null && bt != null)
 				{
 					try
 					{
@@ -517,7 +562,7 @@ partial class Program
 					}
 					bt = bt.BaseType;
 				}
-				
+
 			}
 			if (isarr)
 			{
@@ -556,6 +601,20 @@ partial class Program
 							Array.Copy(arr, newArr, newArr.Length - 1);
 						}
 						object v = sarg;
+						if(isreader)
+						{
+							try
+							{
+								v = new StreamReader(sarg);
+							}
+							catch(Exception ex)
+							{
+								throw new ArgumentException("The file could not be found", arg, ex);
+							}
+						} else if(iswriter)
+						{
+							v = new StreamWriter(sarg, false);
+						} else
 						if (conv == null)
 						{
 							if (parse != null)
@@ -575,7 +634,7 @@ partial class Program
 					}
 					else if (coladd != null)
 					{
-						if(o==null)
+						if (o == null)
 						{
 							o = Activator.CreateInstance(_CmdArgGetType(member));
 							_CmdArgSetValue(member, o);
@@ -596,6 +655,16 @@ partial class Program
 						coladd.Invoke(o, new object[] { v });
 					}
 				}
+			} else if(isreader)
+			{
+				if (argi == args.Length - 1)
+					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
+				_CmdArgSetValue(member, new StreamReader(args[++argi]));
+			} else if(iswriter)
+			{
+				if (argi == args.Length - 1)
+					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
+				_CmdArgSetValue(member, new StreamWriter(args[++argi],false));
 			}
 			else if (isstr)
 			{
@@ -603,7 +672,7 @@ partial class Program
 					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
 				var sarg = args[++argi];
 				member = mappings[arg];
-				o = _CmdArgGetValue(member);
+				o = _CmdArgGetValueRaw(member);
 				if (!found.Contains(member.Name))
 				{
 					_CmdArgSetValue(member, sarg);
@@ -672,19 +741,19 @@ partial class Program
 	{
 		TypeConverter result = null;
 		var attr = m.GetCustomAttribute(typeof(TypeConverterAttribute), true) as TypeConverterAttribute;
-		if(attr!=null)
+		if (attr != null)
 		{
 			Type t = Type.GetType(attr.ConverterTypeName);
 			if (t != null)
 			{
 				result = Activator.CreateInstance(t) as TypeConverter;
-				if(!result.CanConvertFrom(typeof(string)))
+				if (!result.CanConvertFrom(typeof(string)))
 				{
 					result = null;
 				}
 			}
 		}
-		if(result==null)
+		if (result == null)
 		{
 			result = TypeDescriptor.GetConverter(et);
 			if (!result.CanConvertFrom(typeof(string)))
@@ -694,7 +763,7 @@ partial class Program
 		}
 		return result;
 	}
-	private static object _CmdArgGetValue(MemberInfo m)
+	private static object _CmdArgGetValueRaw(MemberInfo m)
 	{
 		if (m == null) return null;
 		var pi = m as PropertyInfo;
@@ -708,6 +777,48 @@ partial class Program
 			return fi.GetValue(null);
 		}
 		return null;
+	}
+	private static object[] _CmdArgGetValues(MemberInfo m)
+	{
+		if (m == null) return null;
+		var pi = m as PropertyInfo;
+		object o = null;
+		if (pi != null)
+		{
+			o = pi.GetValue(null);
+		}
+		var fi = m as FieldInfo;
+		if (fi != null)
+		{
+			o= fi.GetValue(null);
+		}
+		if(o==null)
+		{
+			if(_GetCmdArgIsList(m))
+			{
+				return new object[0];
+			}
+			return null;
+		}
+		if(_GetCmdArgIsList(m))
+		{
+			var et = _CmdArgGetElemType(m);
+			if (o.GetType().IsArray)
+			{
+				var arr = (Array)o;
+				var result = new object[arr.Length];
+				Array.Copy(arr, result, arr.Length);
+				return result;
+			} else
+			{
+				var col = o as System.Collections.ICollection;
+				if(o==null) { throw new NotSupportedException("This collection cannot be retrieved"); }
+				var result = new object[col.Count];
+				col.CopyTo(result, 0);
+				return result;
+			}
+		}
+		return new object[] { o };
 	}
 	private static void _CmdArgSetValue(MemberInfo m, object v)
 	{
@@ -740,6 +851,27 @@ partial class Program
 		}
 		return null;
 	}
+	private static Type _CmdArgGetElemType(MemberInfo m)
+	{
+		var t = _CmdArgGetType(m);
+		if (t == null) return null;
+		if (t.IsArray)
+		{
+			return t.GetElementType();
+		}
+		foreach (var it in t.GetInterfaces())
+		{
+			if (!it.IsGenericType) continue;
+			var tdef = it.GetGenericTypeDefinition();
+			if (typeof(ICollection<>) == tdef)
+			{
+
+				return tdef.GetGenericArguments()[0];
+
+			}
+		}
+		return t;
+	}
 	/// <summary>
 	/// Prints the Usage screen
 	/// </summary>
@@ -760,31 +892,32 @@ partial class Program
 		var descmap = new Dictionary<string, string>();
 		var remaining = width - sb.Length;
 		int maxNameLen = 2;
-		foreach ( var m in mappings)
+		foreach (var m in mappings)
 		{
 			sba.Clear();
-            if (remaining<0)
-            {
+			if (remaining < 0)
+			{
 				sb.Append(Environment.NewLine);
 				remaining = width;
-            }
-            CmdArgAttribute attr = _CmdArgAttr(m.Value);
+			}
+			CmdArgAttribute attr = _CmdArgAttr(m.Value);
 			string desc = _GetCmdArgDesc(m.Value);
 			var list = _GetCmdArgIsList(m.Value);
 			var name = _GetCmdArgName(m.Value);
 			var type = _CmdArgGetType(m.Value);
-			if(!string.IsNullOrWhiteSpace(desc))
+			if (!string.IsNullOrWhiteSpace(desc))
 			{
 				descmap.Add(m.Key, desc);
-			} else
+			}
+			else
 			{
 				descmap.Add(m.Key, "");
 			}
-			if(!attr.Required)
+			if (!attr.Required)
 			{
 				sba.Append("[ ");
 			}
-			if(attr.Name!="<default>")
+			if (attr.Name != "<default>")
 			{
 				if ((m.Key.Length + 1) > maxNameLen)
 				{
@@ -798,15 +931,16 @@ partial class Program
 				{
 					sba.Append(' ');
 				}
-			} else
+			}
+			else
 			{
-				if ((m.Key.Length ) > maxNameLen)
+				if ((m.Key.Length) > maxNameLen)
 				{
-					maxNameLen = m.Key.Length ;
+					maxNameLen = m.Key.Length;
 				}
 
 			}
-			if (remaining-sba.Length<0)
+			if (remaining - sba.Length < 0)
 			{
 				sb.Append(Environment.NewLine);
 				sb.Append("    ");
@@ -821,7 +955,7 @@ partial class Program
 			var itemName = _GetCmdArgElemName(m.Value);
 
 			if (list)
-			{				
+			{
 				sba.Append("{ ");
 				if (remaining - sba.Length < 0)
 				{
@@ -834,9 +968,9 @@ partial class Program
 					remaining -= sba.Length;
 				}
 				sb.Append(sba);
-				
+
 				sba.Clear();
-				for (int i = 1;i<3;++i)
+				for (int i = 1; i < 3; ++i)
 				{
 					sba.Append('<');
 					sba.Append(itemName + i.ToString());
@@ -855,7 +989,7 @@ partial class Program
 					sba.Clear();
 				}
 				sba.Append('<');
-				sba.Append(itemName+"(N)> ");
+				sba.Append(itemName + "(N)> ");
 				if (remaining - sba.Length < 0)
 				{
 					sb.Append(Environment.NewLine);
@@ -868,7 +1002,8 @@ partial class Program
 				}
 				sb.Append(sba);
 				sba.Clear();
-			} else if(type!=typeof(bool))
+			}
+			else if (type != typeof(bool))
 			{
 				sba.Append('<');
 				sba.Append(itemName);
@@ -894,7 +1029,7 @@ partial class Program
 				{
 					sb.Append(Environment.NewLine);
 					sb.Append("    ");
-					remaining = width-4;
+					remaining = width - 4;
 				}
 				else
 				{
@@ -902,7 +1037,8 @@ partial class Program
 				}
 				sb.Append(sba);
 				sba.Clear();
-			} else
+			}
+			else
 			{
 				sba.Append(' ');
 			}
@@ -923,10 +1059,10 @@ partial class Program
 				sba.Clear();
 			}
 		}
-		
+
 		w.WriteLine(sb.ToString().Trim());
 		var printedName = false;
-		if(!string.IsNullOrWhiteSpace(Info.Name) && Info.Version!=null)
+		if (!string.IsNullOrWhiteSpace(Info.Name) && Info.Version != null)
 		{
 			w.WriteLine();
 			w.Write(Info.Name);
@@ -934,27 +1070,29 @@ partial class Program
 			w.WriteLine(Info.Version.ToString());
 			printedName = true;
 		}
-		if(!string.IsNullOrWhiteSpace(Info.Description))
+		if (!string.IsNullOrWhiteSpace(Info.Description))
 		{
-			w.WriteLine(WordWrap(Info.Description,width,4));
+			w.WriteLine(WordWrap(Info.Description, width, 4));
 			w.WriteLine();
-		} else if(printedName)
+		}
+		else if (printedName)
 		{
 			Console.WriteLine();
 		}
-		foreach(var m in mappings)
+		foreach (var m in mappings)
 		{
 			if (m.Key != "<default>")
 			{
 				w.Write('/');
 				w.Write(m.Key);
 				w.Write(new string(' ', maxNameLen + 1 - m.Key.Length));
-			} else
+			}
+			else
 			{
 				w.Write(m.Key);
 				w.Write(new string(' ', maxNameLen + 2 - m.Key.Length));
 			}
-			
+
 			w.WriteLine(WordWrap(_GetCmdArgDesc(m.Value), width, 4, maxNameLen + 2).Trim());
 		}
 		w.Write("/?");
@@ -988,7 +1126,7 @@ partial class Program
 	/// <param name="indent">The indent for successive lines, in number of spaces</param>
 	/// <param name="startOffset">The starting offset of the first line where the text begins</param>
 	/// <returns></returns>
-	public static string WordWrap(string text, int width=0, int indent=0, int startOffset=0)
+	public static string WordWrap(string text, int width = 0, int indent = 0, int startOffset = 0)
 	{
 		if (width == 0)
 		{
@@ -1008,7 +1146,7 @@ partial class Program
 
 			if (actualWidth > width)
 			{
-				if(result.Length>0)
+				if (result.Length > 0)
 				{
 					result.Append(Environment.NewLine);
 					if (indent > 0)
@@ -1016,15 +1154,15 @@ partial class Program
 						result.Append(new string(' ', indent));
 					}
 					first = false;
-					
+
 				}
 				result.Append(actualLine.ToString());
 				actualLine.Clear();
 				actualWidth = indent;
 			}
-			
+
 		}
-		if(actualLine.Length > 0)
+		if (actualLine.Length > 0)
 		{
 			if (!first)
 			{
@@ -1036,7 +1174,7 @@ partial class Program
 				}
 			}
 			result.Append(actualLine.ToString());
-	
+
 		}
 		return result.ToString().TrimEnd();
 	}
@@ -1047,21 +1185,34 @@ partial class Program
 			PrintUsage();
 			return 0;
 		}
-#if !DEBUG
-			try
-			{
-#endif
-		var mappings = _CmdArgsReflect();
-		_CmdArgsCrack(args, mappings);
-		Run();
+		Dictionary<string, MemberInfo> mappings = _CmdArgsReflect();
+		try
+		{
+			_CmdArgsCrack(args, mappings);
+			Run();
 
+		}
 #if !DEBUG
-			}
+
 			catch(Exception ex) {
 			return _ReportError(ex);
 			}
 #endif
-
+		finally
+		{
+			foreach(var m in mappings.Values)
+			{
+				var vals = _CmdArgGetValues(m);
+				foreach (var v in vals)
+				{
+					var disp = v as IDisposable;
+					if(v != null != !object.ReferenceEquals(v,Console.In) && !object.ReferenceEquals(v,Console.Out) && !object.ReferenceEquals(v, Console.Error))
+					{
+						disp.Dispose();
+					}
+				}
+			}
+		}
 		return 0;
 	}
 #if !DEBUG
