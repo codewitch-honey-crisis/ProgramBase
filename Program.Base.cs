@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Reflection;
 using System.Text;
 /// <summary>
@@ -23,12 +21,12 @@ public struct ProgramInfo
 	/// <summary>
 	/// A description of the assembly used for the using screen
 	/// </summary>
-	public readonly string Description;
+	public readonly string? Description;
 	/// <summary>
 	/// The version of the assembly used for the using screen
 	/// </summary>
-	public readonly Version Version;
-	public ProgramInfo(string codeBase, string filename, string name, string description, Version version)
+	public readonly Version? Version;
+	public ProgramInfo(string codeBase, string filename, string name, string? description, Version? version)
 	{
 		CodeBase = codeBase;
 		Filename = filename;
@@ -46,7 +44,7 @@ public sealed class CmdArgAttribute : System.Attribute
 	/// <summary>
 	/// The name on the command line or &lt;default&gt; for the first unnamed argument
 	/// </summary>
-	public string Name { get; set; } = null;
+	public string? Name { get; set; } = null;
 	/// <summary>
 	/// True if it is required
 	/// </summary>
@@ -54,11 +52,11 @@ public sealed class CmdArgAttribute : System.Attribute
 	/// <summary>
 	/// A description of the field for the using screen
 	/// </summary>
-	public string Description { get; set; } = null;
+	public string? Description { get; set; } = null;
 	/// <summary>
 	/// The name for value items
 	/// </summary>
-	public string ElementName { get; set; } = null;
+	public string? ElementName { get; set; } = null;
 	/// <summary>
 	/// Constructs a new instance
 	/// </summary>
@@ -66,14 +64,14 @@ public sealed class CmdArgAttribute : System.Attribute
 	/// <param name="required">True if it is required</param>
 	/// <param name="description">A description of the field for the using screen</param>
 	/// <param name="elementName">The name for value items</param>
-	public CmdArgAttribute(string name = null, bool required = false, string description = null, string elementName = null) { Name = name; Required = required; Description = description; ElementName = elementName; }
+	public CmdArgAttribute(string? name = null, bool required = false, string? description = null, string? elementName = null) { Name = name; Required = required; Description = description; ElementName = elementName; }
 }
 partial class Program
 {
 	private sealed class DemandTextWriter : TextWriter
 	{
 		readonly string _name;
-		StreamWriter _writer = null;
+		StreamWriter? _writer = null;
 		void EnsureWriter()
 		{
 			if (_writer == null)
@@ -83,7 +81,7 @@ partial class Program
 		}
 		public override Encoding Encoding {
 			get {
-				if(_writer==null)
+				if (_writer == null)
 				{
 					return Encoding.UTF8;
 				}
@@ -101,21 +99,21 @@ partial class Program
 		}
 		public override void Close()
 		{
-			if(_writer!=null)
+			if (_writer != null)
 			{
 				_writer.Close();
 			}
 			base.Close();
 		}
-		public override void Write(string value)
+		public override void Write(string? value)
 		{
 			EnsureWriter();
-			_writer.Write(value);
+			_writer!.Write(value);
 		}
-		public override void WriteLine(string value)
+		public override void WriteLine(string? value)
 		{
 			EnsureWriter();
-			_writer.WriteLine(value);
+			_writer!.WriteLine(value);
 		}
 	}
 	/// <summary>
@@ -180,7 +178,7 @@ partial class Program
 			return Environment.CommandLine.Substring(0, Environment.CommandLine.IndexOf(' '));
 		}
 	}
-	static Version _GetVersion()
+	static Version? _GetVersion()
 	{
 		try
 		{
@@ -211,7 +209,7 @@ partial class Program
 		catch { }
 		return Path.GetFileNameWithoutExtension(_GetCodeBase());
 	}
-	static string _GetDescription()
+	static string? _GetDescription()
 	{
 		try
 		{
@@ -230,7 +228,7 @@ partial class Program
 		catch { }
 		return null;
 	}
-	private static string _GetCmdArgName(MemberInfo member)
+	private static string? _GetCmdArgName(MemberInfo member)
 	{
 		if (!(member is FieldInfo) && !(member is PropertyInfo))
 		{
@@ -240,7 +238,7 @@ partial class Program
 		if (cmdArg != null)
 		{
 			var ca = cmdArg as CmdArgAttribute;
-			var result = ca.Name;
+			var result = ca!.Name;
 			if (string.IsNullOrWhiteSpace(result))
 			{
 				result = member.Name;
@@ -258,7 +256,7 @@ partial class Program
 			if (cmdArg != null)
 			{
 				var ca = cmdArg as CmdArgAttribute;
-				if (!string.IsNullOrWhiteSpace(ca.ElementName))
+				if (!string.IsNullOrWhiteSpace(ca!.ElementName))
 				{
 					result = ca.ElementName;
 				}
@@ -273,6 +271,7 @@ partial class Program
 			return false;
 		}
 		var t = _CmdArgGetType(member);
+		if (t == null) return false;
 		if (t.IsArray)
 		{
 			return true;
@@ -283,14 +282,12 @@ partial class Program
 			var tdef = it.GetGenericTypeDefinition();
 			if (typeof(ICollection<>) == tdef)
 			{
-
 				return true;
-
 			}
 		}
 		return false;
 	}
-	private static string _GetCmdArgDesc(MemberInfo member)
+	private static string? _GetCmdArgDesc(MemberInfo member)
 	{
 		if (!(member is FieldInfo) && !(member is PropertyInfo))
 		{
@@ -333,7 +330,7 @@ partial class Program
 		}
 		return result;
 	}
-	static CmdArgAttribute _CmdArgAttr(MemberInfo m)
+	static CmdArgAttribute? _CmdArgAttr(MemberInfo m)
 	{
 		return m.GetCustomAttribute(typeof(CmdArgAttribute), true) as CmdArgAttribute;
 	}
@@ -344,9 +341,9 @@ partial class Program
 			throw new ArgumentException(string.Format("Unrecognized argument {0}", args[0]));
 		}
 		var argi = 0;
-		string defaultname = null;
-		MemberInfo defaultMember;
-		CmdArgAttribute cmdArgAttr;
+		string? defaultname = null;
+		MemberInfo? defaultMember;
+		CmdArgAttribute? cmdArgAttr;
 		var found = new HashSet<string>();
 		mappings.TryGetValue("<default>", out defaultMember);
 		if (defaultMember != null)
@@ -356,20 +353,20 @@ partial class Program
 			if (args.Length == 0 || args[0][0] == '/')
 			{
 
-				if (cmdArgAttr.Required)
+				if (cmdArgAttr!.Required)
 					throw new ArgumentException(string.Format("<default> must be specified."));
 			}
 			else
 			{
 				var o = _CmdArgGetDefaultValue(defaultMember);
-				Type et = _CmdArgGetType(defaultMember);
+				Type et = _CmdArgGetType(defaultMember)!;
 				var isarr = et.IsArray;
-				MethodInfo coladd = null;
-				MethodInfo colclear = null;
-				MethodInfo parse = null;
+				MethodInfo? coladd = null;
+				MethodInfo? colclear = null;
+				MethodInfo? parse = null;
 				if (isarr)
 				{
-					et = et.GetElementType();
+					et = et.GetElementType()!;
 				}
 				else
 				{
@@ -381,15 +378,15 @@ partial class Program
 						{
 
 							et = et.GenericTypeArguments[0];
-							coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new Type[] { et });
-							colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, Type.EmptyTypes);
+							coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new Type[] { et }, null);
+							colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes, null);
 						}
 					}
 				}
 				var isreader = typeof(TextReader) == et;
 				var iswriter = typeof(TextWriter) == et;
 
-				TypeConverter conv = _CmdArgGetConv(defaultMember, et);
+				TypeConverter? conv = _CmdArgGetConv(defaultMember, et);
 				if (conv == null && !isarr && coladd == null)
 				{
 					var bt = et;
@@ -401,7 +398,7 @@ partial class Program
 						}
 						catch (AmbiguousMatchException)
 						{
-							parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string) });
+							parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(string) }, null);
 
 						}
 						bt = bt.BaseType;
@@ -428,8 +425,8 @@ partial class Program
 					if (arg[0] == '/') break;
 					if (isarr)
 					{
-						var arr = (Array)o;
-						Array newArr = null;
+						Array? arr = (Array)o!;
+						Array newArr;
 						if (arr == null)
 						{
 							newArr = Array.CreateInstance(et, 1);
@@ -441,30 +438,33 @@ partial class Program
 						}
 						object v;
 						v = arg;
-						if(isreader==true)
+						if (isreader == true)
 						{
 							try
 							{
 								v = new StreamReader(arg);
-							} catch(Exception e)
+							}
+							catch (Exception e)
 							{
 								throw new ArgumentException("File not found", arg, e);
 							}
-						} else if(iswriter==true)
+						}
+						else if (iswriter == true)
 						{
 							v = new DemandTextWriter(arg);
-						} else
+						}
+						else
 						if (conv == null)
 						{
 							if (parse != null)
 							{
 
-								v = parse.Invoke(null, new object[] { arg });
+								v = parse.Invoke(null, new object[] { arg })!;
 							}
 						}
 						else
 						{
-							v = conv.ConvertFromInvariantString(arg);
+							v = conv.ConvertFromInvariantString(arg)!;
 						}
 						newArr.SetValue(v, newArr.Length - 1);
 						_CmdArgSetValue(defaultMember, newArr);
@@ -474,7 +474,7 @@ partial class Program
 					{
 						if (o == null)
 						{
-							o = Activator.CreateInstance(_CmdArgGetType(defaultMember));
+							o = Activator.CreateInstance(_CmdArgGetType(defaultMember)!);
 							_CmdArgSetValue(defaultMember, o);
 						}
 						object v;
@@ -493,15 +493,16 @@ partial class Program
 							if (parse != null)
 							{
 
-								v = parse.Invoke(null, new object[] { arg });
+								v = parse.Invoke(null, new object[] { arg })!;
 							}
 						}
 						else
 						{
-							v = conv.ConvertFromInvariantString(arg);
+							v = conv.ConvertFromInvariantString(arg)!;
 						}
 						coladd.Invoke(o, new object[] { v });
-					} else if(isreader)
+					}
+					else if (isreader)
 					{
 
 						StreamReader reader;
@@ -509,12 +510,13 @@ partial class Program
 						{
 							reader = new StreamReader(arg);
 						}
-						catch(Exception ex)
+						catch (Exception ex)
 						{
 							throw new ArgumentException("The file could could not be found", arg, ex);
 						}
 						_CmdArgSetValue(defaultMember, reader);
-					} else if(iswriter)
+					}
+					else if (iswriter)
 					{
 						_CmdArgSetValue(defaultMember, new DemandTextWriter(arg));
 					}
@@ -548,22 +550,22 @@ partial class Program
 			MemberInfo member;
 			object o;
 
-			if (!mappings.TryGetValue(arg, out member))
+			if (!mappings.TryGetValue(arg, out member!))
 			{
 				throw new InvalidProgramException(string.Format("Unknown switch /{0}", arg));
 			}
 
-			Type et = _CmdArgGetType(member);
-			o = _CmdArgGetValueRaw(member);
+			Type et = _CmdArgGetType(member)!;
+			o = _CmdArgGetValueRaw(member)!;
 			var isarr = et.IsArray;
-			MethodInfo coladd = null;
-			MethodInfo colclear = null;
-			MethodInfo parse = null;
+			MethodInfo? coladd = null;
+			MethodInfo? colclear = null;
+			MethodInfo? parse = null;
 			var isbool = et == typeof(bool);
 			var isstr = et == typeof(string);
 			if (isarr)
 			{
-				et = et.GetElementType();
+				et = et.GetElementType()!;
 			}
 			else
 			{
@@ -574,8 +576,8 @@ partial class Program
 					if (typeof(ICollection<>) == tdef)
 					{
 						et = et.GenericTypeArguments[0];
-						coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, new Type[] { et });
-						colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, Type.EmptyTypes);
+						coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new Type[] { et }, null);
+						colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes, null);
 						break;
 
 					}
@@ -584,7 +586,7 @@ partial class Program
 			var isreader = typeof(TextReader) == et;
 			var iswriter = typeof(TextWriter) == et;
 
-			TypeConverter conv = _CmdArgGetConv(member, et);
+			TypeConverter? conv = _CmdArgGetConv(member, et);
 			if (conv != null)
 			{
 				if (!conv.CanConvertFrom(typeof(string)))
@@ -603,7 +605,7 @@ partial class Program
 					}
 					catch (AmbiguousMatchException)
 					{
-						parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, new Type[] { typeof(string) });
+						parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(string) }, null);
 
 					}
 					bt = bt.BaseType;
@@ -635,8 +637,8 @@ partial class Program
 					if (isarr)
 					{
 
-						var arr = (Array)o;
-						Array newArr = null;
+						var arr = (Array)o!;
+						Array newArr;
 						if (arr == null)
 						{
 							newArr = Array.CreateInstance(et, 1);
@@ -647,33 +649,35 @@ partial class Program
 							Array.Copy(arr, newArr, newArr.Length - 1);
 						}
 						object v = sarg;
-						if(isreader)
+						if (isreader)
 						{
 							try
 							{
 								v = new StreamReader(sarg);
 							}
-							catch(Exception ex)
+							catch (Exception ex)
 							{
 								throw new ArgumentException("The file could not be found", arg, ex);
 							}
-						} else if(iswriter)
+						}
+						else if (iswriter)
 						{
 							v = new DemandTextWriter(sarg);
-						} else
+						}
+						else
 						if (conv == null)
 						{
 							if (parse != null)
 							{
 
-								v = parse.Invoke(null, new object[] { sarg });
+								v = parse.Invoke(null, new object[] { sarg })!;
 							}
 						}
 						else
 						{
-							v = conv.ConvertFromInvariantString(sarg);
+							v = conv.ConvertFromInvariantString(sarg)!;
 						}
-						newArr.SetValue(v, arr.Length - 1);
+						newArr.SetValue(v, arr!.Length - 1);
 						o = newArr;
 						_CmdArgSetValue(member, newArr);
 
@@ -682,7 +686,7 @@ partial class Program
 					{
 						if (o == null)
 						{
-							o = Activator.CreateInstance(_CmdArgGetType(member));
+							o = Activator.CreateInstance(_CmdArgGetType(member)!)!;
 							_CmdArgSetValue(member, o);
 						}
 						object v = sarg;
@@ -691,22 +695,24 @@ partial class Program
 							if (parse != null)
 							{
 
-								v = parse.Invoke(null, new object[] { sarg });
+								v = parse.Invoke(null, new object[] { sarg })!;
 							}
 						}
 						else
 						{
-							v = conv.ConvertFromInvariantString(sarg);
+							v = conv.ConvertFromInvariantString(sarg)!;
 						}
 						coladd.Invoke(o, new object[] { v });
 					}
 				}
-			} else if(isreader)
+			}
+			else if (isreader)
 			{
 				if (argi == args.Length - 1)
 					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
 				_CmdArgSetValue(member, new StreamReader(args[++argi]));
-			} else if(iswriter)
+			}
+			else if (iswriter)
 			{
 				if (argi == args.Length - 1)
 					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
@@ -718,7 +724,7 @@ partial class Program
 					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
 				var sarg = args[++argi];
 				member = mappings[arg];
-				o = _CmdArgGetValueRaw(member);
+				o = _CmdArgGetValueRaw(member)!;
 				if (!found.Contains(member.Name))
 				{
 					_CmdArgSetValue(member, sarg);
@@ -750,7 +756,7 @@ partial class Program
 		}
 		foreach (var map in mappings)
 		{
-			if (_CmdArgAttr(map.Value).Required)
+			if (_CmdArgAttr(map.Value)!.Required)
 			{
 				if (!found.Contains(map.Key))
 				{
@@ -759,7 +765,7 @@ partial class Program
 			}
 		}
 	}
-	private static object _CmdArgGetDefaultValue(MemberInfo m)
+	private static object? _CmdArgGetDefaultValue(MemberInfo m)
 	{
 		if (m == null) return null;
 		var dva = m.GetCustomAttribute(typeof(DefaultValueAttribute), true);
@@ -783,17 +789,17 @@ partial class Program
 		}
 		return null;
 	}
-	private static TypeConverter _CmdArgGetConv(MemberInfo m, Type et)
+	private static TypeConverter? _CmdArgGetConv(MemberInfo m, Type et)
 	{
-		TypeConverter result = null;
+		TypeConverter? result = null;
 		var attr = m.GetCustomAttribute(typeof(TypeConverterAttribute), true) as TypeConverterAttribute;
 		if (attr != null)
 		{
-			Type t = Type.GetType(attr.ConverterTypeName);
+			Type? t = Type.GetType(attr.ConverterTypeName);
 			if (t != null)
 			{
 				result = Activator.CreateInstance(t) as TypeConverter;
-				if (!result.CanConvertFrom(typeof(string)))
+				if (result!=null && !result.CanConvertFrom(typeof(string)))
 				{
 					result = null;
 				}
@@ -809,7 +815,7 @@ partial class Program
 		}
 		return result;
 	}
-	private static object _CmdArgGetValueRaw(MemberInfo m)
+	private static object? _CmdArgGetValueRaw(MemberInfo m)
 	{
 		if (m == null) return null;
 		var pi = m as PropertyInfo;
@@ -824,11 +830,11 @@ partial class Program
 		}
 		return null;
 	}
-	private static object[] _CmdArgGetValues(MemberInfo m)
+	private static object?[]? _CmdArgGetValues(MemberInfo m)
 	{
 		if (m == null) return null;
 		var pi = m as PropertyInfo;
-		object o = null;
+		object? o = null;
 		if (pi != null)
 		{
 			o = pi.GetValue(null);
@@ -836,37 +842,37 @@ partial class Program
 		var fi = m as FieldInfo;
 		if (fi != null)
 		{
-			o= fi.GetValue(null);
+			o = fi.GetValue(null);
 		}
-		if(o==null)
+		if (o == null)
 		{
-			if(_GetCmdArgIsList(m))
+			if (_GetCmdArgIsList(m))
 			{
-				return new object[0];
+				return new object?[0];
 			}
-			return null;
+			return new object?[] { null };
 		}
-		if(_GetCmdArgIsList(m))
+		if (_GetCmdArgIsList(m))
 		{
-			var et = _CmdArgGetElemType(m);
 			if (o.GetType().IsArray)
 			{
 				var arr = (Array)o;
 				var result = new object[arr.Length];
 				Array.Copy(arr, result, arr.Length);
 				return result;
-			} else
+			}
+			else
 			{
 				var col = o as System.Collections.ICollection;
-				if(o==null) { throw new NotSupportedException("This collection cannot be retrieved"); }
-				var result = new object[col.Count];
+				if (o == null) { throw new NotSupportedException("This collection cannot be retrieved"); }
+				var result = new object?[col!.Count];
 				col.CopyTo(result, 0);
 				return result;
 			}
 		}
-		return new object[] { o };
+		return new object?[] { o };
 	}
-	private static void _CmdArgSetValue(MemberInfo m, object v)
+	private static void _CmdArgSetValue(MemberInfo m, object? v)
 	{
 		if (m == null) return;
 		var pi = m as PropertyInfo;
@@ -881,10 +887,9 @@ partial class Program
 			fi.SetValue(null, v);
 		}
 	}
-	private static Type _CmdArgGetType(MemberInfo m)
+	private static Type? _CmdArgGetType(MemberInfo m)
 	{
-		if (m == null) return null;
-
+		
 		var pi = m as PropertyInfo;
 		if (pi != null)
 		{
@@ -897,7 +902,7 @@ partial class Program
 		}
 		return null;
 	}
-	private static Type _CmdArgGetElemType(MemberInfo m)
+	private static Type? _CmdArgGetElemType(MemberInfo m)
 	{
 		var t = _CmdArgGetType(m);
 		if (t == null) return null;
@@ -946,8 +951,8 @@ partial class Program
 				sb.Append(Environment.NewLine);
 				remaining = width;
 			}
-			CmdArgAttribute attr = _CmdArgAttr(m.Value);
-			string desc = _GetCmdArgDesc(m.Value);
+			var attr = _CmdArgAttr(m.Value)!;
+			var desc = _GetCmdArgDesc(m.Value);
 			var list = _GetCmdArgIsList(m.Value);
 			var name = _GetCmdArgName(m.Value);
 			var type = _CmdArgGetType(m.Value);
@@ -1138,8 +1143,15 @@ partial class Program
 				w.Write(m.Key);
 				w.Write(new string(' ', maxNameLen + 2 - m.Key.Length));
 			}
-
-			w.WriteLine(WordWrap(_GetCmdArgDesc(m.Value), width, 4, maxNameLen + 2).Trim());
+			var d = _GetCmdArgDesc(m.Value);
+			if (string.IsNullOrWhiteSpace(d))
+			{
+				w.WriteLine(WordWrap(d!, width, 4, maxNameLen + 2).Trim());
+			}
+			else
+			{
+				w.WriteLine();
+			}
 		}
 		w.Write("/?");
 		w.Write(new string(' ', maxNameLen));
@@ -1174,7 +1186,7 @@ partial class Program
 	{
 		var result = true;
 		var inputfile = GetFilename(input);
-		if(inputfile == null)
+		if (inputfile == null)
 		{
 			return result;
 		}
@@ -1201,10 +1213,10 @@ partial class Program
 	public static bool IsStale(IEnumerable<TextReader> inputs, TextWriter output)
 	{
 		var result = true;
-		foreach(var input in inputs)
+		foreach (var input in inputs)
 		{
 			result = false;
-			if(IsStale(input,output))
+			if (IsStale(input, output))
 			{
 				result = true;
 				break;
@@ -1217,41 +1229,41 @@ partial class Program
 	/// </summary>
 	/// <param name="t">The <see cref="TextReader"/> to examine</param>
 	/// <returns>The filename, if available, or null</returns>
-	public static string GetFilename(TextReader t)
+	public static string? GetFilename(TextReader t)
 	{
 		var sr = t as StreamReader;
-		string result = null;
-		if(sr!=null)
+		string? result = null;
+		if (sr != null)
 		{
-			FileStream fstm = sr.BaseStream as FileStream;
-			if(fstm!=null)
+			var fstm = sr.BaseStream as FileStream;
+			if (fstm != null)
 			{
 				result = fstm.Name;
 			}
 		}
-        if (!string.IsNullOrEmpty(result))
-        {
+		if (!string.IsNullOrEmpty(result))
+		{
 			return result;
-        }
+		}
 		return null;
-    }
+	}
 	/// <summary>
 	/// Gets the filename for a <see cref="TextWriter"/>if available
 	/// </summary>
 	/// <param name="t">The <see cref="TextWriter"/> to examine</param>
 	/// <returns>The filename, if available, or null</returns>
-	public static string GetFilename(TextWriter t)
+	public static string? GetFilename(TextWriter t)
 	{
 		var dtw = t as DemandTextWriter;
-		if(dtw!=null)
+		if (dtw != null)
 		{
 			return dtw.Name;
 		}
 		var sw = t as StreamWriter;
-		string result = null;
+		string? result = null;
 		if (sw != null)
 		{
-			FileStream fstm = sw.BaseStream as FileStream;
+			var fstm = sw.BaseStream as FileStream;
 			if (fstm != null)
 			{
 				result = fstm.Name;
@@ -1344,25 +1356,29 @@ partial class Program
 		}
 #if !DEBUG
 
-			catch(Exception ex) {
-				if(!parsedArgs) 
-				{
-				   PrintUsage();
-				}
-				return _ReportError(ex);
+		catch (Exception ex)
+		{
+			if (!parsedArgs)
+			{
+				PrintUsage();
 			}
+			return _ReportError(ex);
+		}
 #endif
 		finally
 		{
-			foreach(var m in mappings.Values)
+			foreach (var m in mappings.Values)
 			{
 				var vals = _CmdArgGetValues(m);
-				foreach (var v in vals)
+				if (vals != null)
 				{
-					var disp = v as IDisposable;
-					if(v != null != !object.ReferenceEquals(v,Console.In) && !object.ReferenceEquals(v,Console.Out) && !object.ReferenceEquals(v, Console.Error))
+					foreach (var v in vals)
 					{
-						disp.Dispose();
+						var disp = v as IDisposable;
+						if (v != null != !object.ReferenceEquals(v, Console.In) && !object.ReferenceEquals(v, Console.Out) && !object.ReferenceEquals(v, Console.Error))
+						{
+							disp!.Dispose();
+						}
 					}
 				}
 			}
@@ -1372,7 +1388,7 @@ partial class Program
 #if !DEBUG
 	private static int _ReportError(Exception ex)
 	{
-		Console.Error.WriteLine("Error: "+ex.Message);
+		Console.Error.WriteLine("Error: " + ex.Message);
 		return ex.HResult;
 	}
 #endif

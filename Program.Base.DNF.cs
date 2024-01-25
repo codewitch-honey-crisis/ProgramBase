@@ -794,7 +794,7 @@ partial class Program
 			if (t != null)
 			{
 				result = Activator.CreateInstance(t) as TypeConverter;
-				if (!result.CanConvertFrom(typeof(string)))
+				if (result!=null && !result.CanConvertFrom(typeof(string)))
 				{
 					result = null;
 				}
@@ -845,11 +845,10 @@ partial class Program
 			{
 				return new object[0];
 			}
-			return null;
+			return new object[] { null };
 		}
 		if(_GetCmdArgIsList(m))
 		{
-			var et = _CmdArgGetElemType(m);
 			if (o.GetType().IsArray)
 			{
 				var arr = (Array)o;
@@ -1139,8 +1138,14 @@ partial class Program
 				w.Write(m.Key);
 				w.Write(new string(' ', maxNameLen + 2 - m.Key.Length));
 			}
-
-			w.WriteLine(WordWrap(_GetCmdArgDesc(m.Value), width, 4, maxNameLen + 2).Trim());
+			var d = _GetCmdArgDesc(m.Value);
+			if (string.IsNullOrWhiteSpace(d))
+			{
+				w.WriteLine(WordWrap(d, width, 4, maxNameLen + 2).Trim());
+			} else
+			{
+				w.WriteLine();
+			}
 		}
 		w.Write("/?");
 		w.Write(new string(' ', maxNameLen));
@@ -1358,12 +1363,15 @@ partial class Program
 			foreach(var m in mappings.Values)
 			{
 				var vals = _CmdArgGetValues(m);
-				foreach (var v in vals)
+				if (vals != null)
 				{
-					var disp = v as IDisposable;
-					if(v != null != !object.ReferenceEquals(v,Console.In) && !object.ReferenceEquals(v,Console.Out) && !object.ReferenceEquals(v, Console.Error))
+					foreach (var v in vals)
 					{
-						disp.Dispose();
+						var disp = v as IDisposable;
+						if (v != null != !object.ReferenceEquals(v, Console.In) && !object.ReferenceEquals(v, Console.Out) && !object.ReferenceEquals(v, Console.Error))
+						{
+							disp.Dispose();
+						}
 					}
 				}
 			}
