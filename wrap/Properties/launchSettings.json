@@ -3,6 +3,10 @@
     "wrap": {
       "commandName": "Project",
       "commandLineArgs": "\"..\\..\\..\\foo.txt\""
+    },
+    "wrap usage": {
+      "commandName": "Project",
+      "commandLineArgs": "/?"
     }
   }
 }

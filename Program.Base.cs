@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
 using System.Reflection.PortableExecutable;
+using System.Runtime.CompilerServices;
 using System.Text;
 /// <summary>
 /// Provides basic information about the executing program
@@ -1117,6 +1118,42 @@ partial class Program
 		}
 		catch { }
 		return result;
+	}
+	public static string GetFilename(TextReader t)
+	{
+		var sr = t as StreamReader;
+		string result = null;
+		if(sr!=null)
+		{
+			FileStream fstm = sr.BaseStream as FileStream;
+			if(fstm!=null)
+			{
+				result = fstm.Name;
+			}
+		}
+        if (!string.IsNullOrEmpty(result))
+        {
+			return result;
+        }
+		return null;
+    }
+	public static string GetFilename(TextWriter t)
+	{
+		var sw = t as StreamWriter;
+		string result = null;
+		if (sw != null)
+		{
+			FileStream fstm = sw.BaseStream as FileStream;
+			if (fstm != null)
+			{
+				result = fstm.Name;
+			}
+		}
+		if (!string.IsNullOrEmpty(result))
+		{
+			return result;
+		}
+		return null;
 	}
 	/// <summary>
 	/// Performs word wrapping
