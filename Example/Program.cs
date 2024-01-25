@@ -38,7 +38,13 @@ static partial class Program
 			Thread.Sleep(10);
 		}
 		Console.WriteLine();
+		var first = true;
 		foreach (var reader in Input) {
+			if (!first)
+			{
+				Output.WriteLine();
+			}
+			else { first = false; }
 			Output.Write(WordWrap(reader.ReadToEnd(), Width, 0));
 		}
 	}
