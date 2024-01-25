@@ -7,8 +7,8 @@ using System.Reflection;
 static partial class Program
 {
 	[CmdArg("<default>", true, "The input files", ElementName = "infile")]
-	public static TextReader[] Input = null;// new TextReader[] { Console.In };
-	[CmdArg("output", false, "The output file", ElementName = "outfile")]
+	public static TextReader[] Inputs = null;// new TextReader[] { Console.In };
+	[CmdArg("output", false, "The output file. Defaults to <stdout>", ElementName = "outfile")]
 	public static TextWriter Output = Console.Out;
 	[CmdArg("id", false, "The guid id", ElementName = "guid")]
 	public static Guid Id = Guid.Empty;
@@ -24,28 +24,30 @@ static partial class Program
 	public static List<int> Indices = null;
 	static void Run()
 	{
-		Console.Write("Progress test: ");
+		Console.Error.Write("Progress test: ");
 		for (int i = 0; i < 10; ++i)
 		{
-			WriteProgress(i, i > 0, Console.Out);
+			WriteProgress(i, i > 0, Console.Error);
 			Thread.Sleep(100);
 		}
-		Console.WriteLine();
-		Console.Write("Progress bar test: ");
+		Console.Error.WriteLine();
+		Console.Error.Write("Progress bar test: ");
 		for (int i = 0; i <= 100; ++i)
 		{
-			WriteProgressBar(i, i > 0, Console.Out);
+			WriteProgressBar(i, i > 0, Console.Error);
 			Thread.Sleep(10);
 		}
-		Console.WriteLine();
+		Console.Error.WriteLine();
+		// use our Inputs and Output
+		// will be closed on exit
 		var first = true;
-		foreach (var reader in Input) {
+		foreach (var input in Inputs) {
 			if (!first)
 			{
 				Output.WriteLine();
 			}
 			else { first = false; }
-			Output.Write(WordWrap(reader.ReadToEnd(), Width, 0));
+			Output.Write(WordWrap(input.ReadToEnd(), Width, 0));
 		}
 	}
 }
