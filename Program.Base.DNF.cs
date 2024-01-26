@@ -938,7 +938,7 @@ partial class Program
 	{
 		if (width == 0)
 		{
-			width = Console.WindowWidth / 2;
+			width = Console.WindowWidth;
 		}
 		var mappings = _CmdArgsReflect();
 		TextWriter w = Console.Error;

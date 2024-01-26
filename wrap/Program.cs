@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 internal partial class Program
 {
 	[CmdArg(Name = "<default>", Description = "The input text file to wrap. Defaults to <stdin>", ElementName = "infile")]
-	static TextReader Input = Console.In;
+	static List<TextReader> Inputs = new List<TextReader>() { Console.In };
 	[CmdArg(Name = "output", Description = "The ouput text file to create. Defaults to <stdout>", ElementName = "outfile")]
 	static TextWriter Output = Console.Out;
 	[CmdArg(Name = "width", Description = "The width to wrap. Defaults based on console window size", ElementName = "columns")]
@@ -12,12 +13,15 @@ internal partial class Program
 	static bool IfStale = false;
 	static void Run()
 	{
-		if (!IfStale || IsStale(Input, Output))
+		if (!IfStale || IsStale(Inputs, Output))
 		{
-			Output.WriteLine(WordWrap(Input.ReadToEnd(), Width));
+			foreach (var input in Inputs)
+			{
+				Output.WriteLine(WordWrap(input.ReadToEnd(), Width));
+			}
 		} else
 		{
-			Console.Error.WriteLine("Skipped execution because \"{0}\" did not change", GetFilename(Input));
+			Console.Error.WriteLine("Skipped execution because the inputs did not change");
 		}
 	}
 }
