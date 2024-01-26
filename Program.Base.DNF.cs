@@ -429,6 +429,36 @@ partial class Program
 		}
 	}
 	#endregion // _ArgInfo
+	#region _GetUserExitCode
+	static int _GetUserExitCode()
+	{
+		var mia = typeof(Program).GetMembers(BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic);
+		for (var i = 0; i < mia.Length; i++)
+		{
+			var m = mia[i];
+			if (m.Name == "ExitCode")
+			{
+				var prop = m as PropertyInfo;
+				var field = m as FieldInfo;
+				if (prop != null)
+				{
+					if (prop.CanRead && typeof(int) == prop.PropertyType && prop.GetAccessors().Length == 0)
+					{
+						return (int)prop.GetValue(null)!;
+					}
+				}
+				else if (field != null)
+				{
+					if (typeof(int) == field.FieldType)
+					{
+						return (int)field.GetValue(null)!;
+					}
+				}
+			}
+		}
+		return 0;
+	}
+	#endregion // _GetUserExitCode
 	private static readonly char[] _RestrictedChars = new char[] { ' ', '\r', '\t', '\n', '\n', '\b', '\"' };
 	#region IsStale
 	/// <summary>
@@ -1186,7 +1216,7 @@ partial class Program
 		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 	}
 	#endregion // _PrintUsage
-
+	#region WriteProgress/WriteProgressBar
 	const string _ProgressTwirl = "-\\|/";
 	const char _ProgressBlock = '■';
 	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
@@ -1229,6 +1259,7 @@ partial class Program
 		_ProgressBuffer.Append(string.Format("] {0,3:##0}%", percent));
 		output.Write(_ProgressBuffer.ToString());
 	}
+	#endregion // WriteProgress/WriteProgressBar
 	static int Main(string[] args)
 	{
 #if !DEBUG

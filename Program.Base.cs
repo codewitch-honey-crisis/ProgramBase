@@ -274,6 +274,7 @@ partial class Program
 			}
 			return ((FieldInfo)Member).GetValue(null);
 		}
+		
 		public void SetMemberValue(object? value)
 		{
 			if (IsProperty)
@@ -1200,7 +1201,7 @@ partial class Program
 		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 	}
 	#endregion // PrintUsage
-
+	#region WriteProgress/WriteProgressBar
 	const string _ProgressTwirl = "-\\|/";
 	const char _ProgressBlock = '■';
 	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
@@ -1243,6 +1244,36 @@ partial class Program
 		_ProgressBuffer.Append(string.Format("] {0,3:##0}%", percent));
 		output.Write(_ProgressBuffer.ToString());
 	}
+	#endregion // WriteProgress/WriteProgressBar
+	#region _GetUserExitCode
+	static int _GetUserExitCode()
+	{
+		var mia = typeof(Program).GetMembers(BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic);
+		for(var i = 0;i<mia.Length;i++)
+		{
+			var m = mia[i];
+			if(m.Name == "ExitCode")
+			{
+				var prop = m as PropertyInfo;
+				var field = m as FieldInfo;
+				if(prop!=null)
+				{
+					if(prop.CanRead && typeof(int)==prop.PropertyType && prop.GetAccessors().Length==0)
+					{
+						return (int)prop.GetValue(null)!;
+					}
+				} else if(field!=null)
+				{
+					if (typeof(int) == field.FieldType)
+					{
+						return (int)field.GetValue(null)!;
+					}
+				}
+			}
+		}
+		return 0;
+	}
+	#endregion // _GetUserExitCode
 	static int Main(string[] args)
 	{
 #if !DEBUG
@@ -1287,7 +1318,7 @@ partial class Program
 				}
 			}
 		}
-		return 0;
+		return _GetUserExitCode();
 	}
 }
 
