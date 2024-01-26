@@ -34,3 +34,49 @@ static partial class Program
 That will parse arguments into those fields. It accepts strings, collections, arrays and bool switches, or anything TypeConverter can convert, or that has a static Parse() method that takes a string.
 
 There is also a `WordWrap()` function that will wrap text, `PrintUsage()` will print the usage screen, and `IsStale()` will check if a file doesn't exist or another file is newer. There is `WriteProgress()` which writes an indeterminate progress indicator and `WriteProgressBar()` which writes a progress bar.
+
+Here is a complete CLI app (using Program.Base.cs) that will word wrap text to the specified width
+```cs
+using System;
+using System.IO;
+internal partial class Program
+{
+	[CmdArg(Name = "<default>", Description = "The input text file to wrap. Defaults to <stdin>", ElementName = "infile")]
+	static TextReader Input = Console.In;
+	[CmdArg(Name = "output", Description = "The ouput text file to create. Defaults to <stdout>", ElementName = "outfile")]
+	static TextWriter Output = Console.Out;
+	[CmdArg(Name = "width", Description = "The width to wrap. Defaults based on console window size", ElementName = "columns")]
+	static int Width = (int)Math.Floor((double)Console.WindowWidth / 1.5);
+	[CmdArg(Name = "ifstale", Description = "Skip if the input file is older than the output file")]
+	static bool IfStale = false;
+	static void Run()
+	{
+		if (!IfStale || IsStale(Input, Output))
+		{
+			Output.WriteLine(WordWrap(Input.ReadToEnd(), Width));
+		} else
+		{
+			Console.Error.WriteLine("Skipped execution because \"{0}\" did not change", GetFilename(Input));
+		}
+	}
+}
+```
+This application presents the following using screen:
+```
+Usage: wrap [ <infile> ] [ /output <outfile> ] [ /width
+    <columns> ] [ /ifstale ]
+
+wrap v1.0.0.0
+Word wraps input
+
+<default>  The input text file to wrap. Defaults to <stdin>
+/output    The ouput text file to create. Defaults to
+    <stdout>
+/width     The width to wrap. Defaults based on console
+    window size
+/ifstale   Skip if the input file is older than the output
+    file
+/?         Displays this screen and exits
+```
+
+That's all built for you from the above. Note the automatic file management.
