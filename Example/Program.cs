@@ -6,11 +6,11 @@ using System.Reflection;
 */
 static partial class Program
 {
-	[CmdArg("<default>", Required =true,Description ="The input files", ItemName = "infile")]
-	public static TextReader[] Inputs = null;// new TextReader[] { Console.In };
-	[CmdArg("output",Description = "The output file. Defaults to <stdout>", ItemName = "outfile")]
+	[CmdArg(Ordinal = 0,Required =true,Description ="The input files")]
+	public static TextReader[] Inputs = null;
+	[CmdArg("output",Description = "The output file. Defaults to <stdout>")]
 	public static TextWriter Output = Console.Out;
-	[CmdArg("id", Description = "The guid id", ItemName = "guid")]
+	[CmdArg("id", Required =true, Description = "The guid id", ItemName = "guid")]
 	public static Guid Id = Guid.Empty;
 	[CmdArg("ips", Description = "The ip addesses", ItemName = "address")]
 	public static List<IPAddress> Ips = new List<IPAddress>() { IPAddress.Any };

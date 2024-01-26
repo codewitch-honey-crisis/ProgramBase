@@ -765,12 +765,47 @@ partial class Program
 		result.Sort((lhs, rhs) => {
 			if (-1 < lhs.Ordinal)
 			{
-				return (rhs.Ordinal > -1) ? -1 : 0;
+				if(rhs.Ordinal>-1)
+				{
+					return -1;
+				}
+				if(lhs.IsOptional)
+				{
+					if(rhs.IsOptional)
+					{
+						return 0;
+					}
+					return 1;
+				} else
+				{
+					if(rhs.IsOptional)
+					{
+						return -1;
+					}
+					return 0;
+				}
 			}
 			if (-1 < rhs.Ordinal) return 1;
 			int cmp = rhs.Ordinal - lhs.Ordinal;
 			if (cmp == 0)
-				return string.Compare(lhs.Name, rhs.Name);
+			{
+				if (lhs.IsOptional)
+				{
+					if (rhs.IsOptional)
+					{
+						return string.Compare(lhs.Name, rhs.Name);
+					}
+					return 1;
+				}
+				else
+				{
+					if (rhs.IsOptional)
+					{
+						return -1;
+					}
+					return string.Compare(lhs.Name, rhs.Name);
+				}	
+			}
 			return cmp;
 		});
 		for (int i = 0; i < result.Count - 1; ++i)
