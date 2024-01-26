@@ -1248,7 +1248,7 @@ partial class Program
 #if !DEBUG
 		var parsedArgs = false;
 #endif // !DEBUG
-		IList<_ArgInfo> argInfos = null;
+		IList<_ArgInfo>? argInfos = null;
 		try
 		{
 			argInfos = _ReflectArguments(typeof(Program));
