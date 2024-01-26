@@ -407,7 +407,7 @@ partial class Program
 				}
 				catch (Exception ex)
 				{
-					throw new ArgumentException(string.Format("Error opening <{0}> \"{1}\"", ItemName, input,ex));
+					throw new ArgumentException(string.Format("Error opening <{0}> \"{1}\"", ItemName, input, ex));
 				}
 			}
 			if (IsTextWriter)
@@ -444,14 +444,14 @@ partial class Program
 				{
 					if (prop.CanRead && typeof(int) == prop.PropertyType && prop.GetAccessors().Length == 0)
 					{
-						return (int)prop.GetValue(null)!;
+						return (int)prop.GetValue(null);
 					}
 				}
 				else if (field != null)
 				{
 					if (typeof(int) == field.FieldType)
 					{
-						return (int)field.GetValue(null)!;
+						return (int)field.GetValue(null);
 					}
 				}
 			}
@@ -1009,6 +1009,95 @@ partial class Program
 		}
 	}
 	#endregion // _ParseArguments
+	#region CrackCommandLine
+	internal static string[] CrackCommandLine(string commandLine, out string exename, char esc = '\\')
+	{
+		exename = null;
+		var result = new List<string>();
+		var i = 0;
+		var inQuote = false;
+		var sb = new StringBuilder();
+		while (i < commandLine.Length)
+		{
+			if (!inQuote)
+			{
+				if (sb.Length == 0)
+				{
+					if (commandLine[i] == '"')
+					{
+						inQuote = true;
+						++i;
+						continue;
+					}
+				}
+				var ws = false;
+				while (char.IsWhiteSpace(commandLine[i]))
+				{
+					ws = true;
+					++i;
+				}
+				if (ws)
+				{
+					if (sb.Length > 0)
+					{
+						if (exename == null)
+						{
+							exename = sb.ToString();
+						}
+						else
+						{
+							result.Add(sb.ToString());
+						}
+						sb.Clear();
+					}
+				}
+				else
+				{
+					sb.Append(commandLine[i]);
+					++i;
+				}
+
+			}
+			else
+			{
+				if (i < commandLine.Length - 1 && commandLine[i] == esc && commandLine[i + 1] == '\"')
+				{
+					sb.Append('\"');
+					i += 2;
+				}
+				else if (commandLine[i] == '\"')
+				{
+					if (exename == null)
+					{
+						exename = sb.ToString();
+					}
+					else
+					{
+						result.Add(sb.ToString());
+					}
+					sb.Clear();
+					inQuote = false;
+					++i;
+				}
+				sb.Append(commandLine[i]);
+				++i;
+			}
+		}
+		if (sb.Length > 0)
+		{
+			if (exename == null)
+			{
+				exename = sb.ToString();
+			}
+			else
+			{
+				result.Add(sb.ToString());
+			}
+		}
+		return result.ToArray();
+	}
+	#endregion // CrackCommandLine
+
 	#region WordWrap
 	/// <summary>
 	/// Performs word wrapping

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 internal partial class Program
 {
+	#pragma warning disable CS0414
 	private static int ExitCode = 0;
+	#pragma warning restore
 	[CmdArg(Ordinal =0, Description = "The input text file to wrap. Defaults to <stdin>")]
 	static List<TextReader> Inputs = new List<TextReader>() { Console.In };
 	[CmdArg(Name = "output", Description = "The ouput text file to create. Defaults to <stdout>")]
@@ -14,6 +16,7 @@ internal partial class Program
 	static bool IfStale = false;
 	static void Run()
 	{
+		
 		if (!IfStale || IsStale(Inputs, Output))
 		{
 			foreach (var input in Inputs)

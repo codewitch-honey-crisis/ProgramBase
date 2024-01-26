@@ -1,4 +1,5 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -15,7 +16,7 @@ internal sealed class CmdArgAttribute : System.Attribute
 	/// <summary>
 	/// The name on the command line or null or empty to use a camel cased member name. Ignored for ordinal arguments
 	/// </summary>
-	public string? Name { get; set; } = null;
+	public string Name { get; set; } = null;
 	/// <summary>
 	/// The ordinal position of the argument. -1 if the name is used
 	/// </summary>
@@ -27,11 +28,11 @@ internal sealed class CmdArgAttribute : System.Attribute
 	/// <summary>
 	/// A description of the field for the using screen
 	/// </summary>
-	public string? Description { get; set; } = null;
+	public string Description { get; set; } = null;
 	/// <summary>
 	/// The name for value items
 	/// </summary>
-	public string? ItemName { get; set; } = null;
+	public string ItemName { get; set; } = null;
 	/// <summary>
 	/// Constructs a new instance
 	/// </summary>
@@ -40,7 +41,7 @@ internal sealed class CmdArgAttribute : System.Attribute
 	/// <param name="required">True if it is required</param>
 	/// <param name="description">A description of the field for the using screen</param>
 	/// <param name="itemName">The name for value items</param>
-	public CmdArgAttribute(string? name = null, int ordinal = -1, bool required = false, string? description = null, string? itemName = null) { Name = name; Required = required; Description = description; ItemName = itemName; }
+	public CmdArgAttribute(string name = null, int ordinal = -1, bool required = false, string description = null, string itemName = null) { Name = name; Required = required; Description = description; ItemName = itemName; }
 }
 #endregion // CmdArgAttribute
 #region ProgramInfo
@@ -60,21 +61,21 @@ internal struct ProgramInfo
 	/// <summary>
 	/// The proper name of the assembly
 	/// </summary>
-	public readonly string? Name;
+	public readonly string Name;
 	/// <summary>
 	/// A description of the assembly used for the using screen
 	/// </summary>
-	public readonly string? Description;
+	public readonly string Description;
 	/// <summary>
 	/// A copyright of the assembly used for the using screen
 	/// </summary>
-	public readonly string? Copyright;
+	public readonly string Copyright;
 	/// <summary>
 	/// The version of the assembly used for the using screen
 	/// </summary>
-	public readonly Version? Version;
+	public readonly Version Version;
 	public static readonly ProgramInfo This = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion());
-	private ProgramInfo(string codeBase, string filename, string name, string? description, string? copyright, Version? version)
+	private ProgramInfo(string codeBase, string filename, string name, string description, string copyright, Version version)
 	{
 		CodeBase = codeBase;
 		Filename = filename;
@@ -98,7 +99,7 @@ internal struct ProgramInfo
 			return Environment.CommandLine.Substring(0, Environment.CommandLine.IndexOf(' '));
 		}
 	}
-	static Version? _GetVersion()
+	static Version _GetVersion()
 	{
 		try
 		{
@@ -129,7 +130,7 @@ internal struct ProgramInfo
 		catch { }
 		return Path.GetFileNameWithoutExtension(_GetCodeBase());
 	}
-	static string? _GetDescription()
+	static string _GetDescription()
 	{
 		try
 		{
@@ -148,7 +149,7 @@ internal struct ProgramInfo
 		catch { }
 		return null;
 	}
-	static string? _GetCopyright()
+	static string _GetCopyright()
 	{
 		try
 		{
@@ -180,7 +181,7 @@ partial class Program
 	private sealed class _DeferredTextWriter : TextWriter
 	{
 		readonly string _name;
-		StreamWriter? _writer = null;
+		StreamWriter _writer = null;
 		void EnsureWriter()
 		{
 			if (_writer == null)
@@ -226,25 +227,25 @@ partial class Program
 			}
 			base.Close();
 		}
-		public override void Write(string? value)
+		public override void Write(string value)
 		{
 			EnsureWriter();
-			_writer!.Write(value);
+			_writer.Write(value);
 		}
-		public override void WriteLine(string? value)
+		public override void WriteLine(string value)
 		{
 			EnsureWriter();
-			_writer!.WriteLine(value);
+			_writer.WriteLine(value);
 		}
 	}
 	#endregion // _DeferredTextWriter
 	#region _ArgInfo
 	private struct _ArgInfo
 	{
-		public string? Name;
+		public string Name;
 		public int Ordinal;
-		public string? Description;
-		public string? ItemName;
+		public string Description;
+		public string ItemName;
 		public MemberInfo Member;
 		public bool IsOptional;
 		public bool IsProperty;
@@ -253,20 +254,20 @@ partial class Program
 		public bool HasArgument {
 			get { return ElementType != typeof(bool); }
 		}
-		public Type? Type;
-		public Type? ElementType;
+		public Type Type;
+		public Type ElementType;
 		public bool IsCollection {
 			get {
 				return ColAdd != null && ColClear != null;
 			}
 		}
-		public MethodInfo? ColAdd;
-		public MethodInfo? ColClear;
-		public MethodInfo? Parse;
-		public TypeConverter? Converter;
+		public MethodInfo ColAdd;
+		public MethodInfo ColClear;
+		public MethodInfo Parse;
+		public TypeConverter Converter;
 		public bool IsArray;
-		public object? InitialValue;
-		public object? GetMemberValue()
+		public object InitialValue;
+		public object GetMemberValue()
 		{
 			if (IsProperty)
 			{
@@ -274,8 +275,7 @@ partial class Program
 			}
 			return ((FieldInfo)Member).GetValue(null);
 		}
-		
-		public void SetMemberValue(object? value)
+		public void SetMemberValue(object value)
 		{
 			if (IsProperty)
 			{
@@ -286,13 +286,9 @@ partial class Program
 				((FieldInfo)Member).SetValue(null, value);
 			}
 		}
-		public object? BeginList()
+		public object BeginList()
 		{
-            if (ElementType==null)
-            {
-				return null;
-            }
-            if (IsArray)
+			if (IsArray)
 			{
 				var arr = Array.CreateInstance(ElementType, 0);
 				SetMemberValue(arr);
@@ -301,31 +297,24 @@ partial class Program
 			else if (IsCollection)
 			{
 				var col = GetMemberValue();
-				if (col != null && ColClear!=null)
+				if (col != null)
 				{
 					ColClear.Invoke(col, new object[0]);
 				}
-				else if(this.Type!=null) 
+				else
 				{
 					col = Activator.CreateInstance(this.Type);
 					SetMemberValue(col);
 				}
-				if (col != null)
-				{
-					return col;
-				}
+				return col;
 			}
 			throw new InvalidOperationException("The argument is not a list");
 		}
-		public object? AddToList(string input)
+		public object AddToList(string input)
 		{
-			if(ElementType==null)
-			{
-				return null;
-			}
 			if (IsArray)
 			{
-				Array arr = (Array)GetMemberValue()!;
+				Array arr = (Array)GetMemberValue();
 				var newArr = Array.CreateInstance(ElementType, arr.Length + 1);
 				arr.CopyTo(newArr, 0);
 				newArr.SetValue(InstantiateItem(input), arr.Length);
@@ -333,15 +322,15 @@ partial class Program
 				return newArr;
 
 			}
-			else if (IsCollection && ColAdd!=null)
+			else if (IsCollection)
 			{
 				var col = GetMemberValue();
-				ColAdd.Invoke(col, new object?[] { InstantiateItem(input) });
-				return col!;
+				ColAdd.Invoke(col, new object[] { InstantiateItem(input) });
+				return col;
 			}
 			throw new InvalidOperationException("The argument is not a list");
 		}
-		void _DestroyItem(object? obj)
+		void _DestroyItem(object obj)
 		{
 			if (obj != null)
 			{
@@ -394,7 +383,7 @@ partial class Program
 			}
 
 		}
-		public object? InstantiateItem(string input)
+		public object InstantiateItem(string input)
 		{
 			if (string.IsNullOrWhiteSpace(input))
 			{
@@ -419,7 +408,7 @@ partial class Program
 				}
 				catch (Exception ex)
 				{
-					throw new ArgumentException(string.Format("Error opening <{0}> \"{1}\"", ItemName, input,ex));
+					throw new ArgumentException(string.Format("Error opening <{0}> \"{1}\"", ItemName, input, ex));
 				}
 			}
 			if (IsTextWriter)
@@ -441,6 +430,36 @@ partial class Program
 		}
 	}
 	#endregion // _ArgInfo
+	#region _GetUserExitCode
+	static int _GetUserExitCode()
+	{
+		var mia = typeof(Program).GetMembers(BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic);
+		for (var i = 0; i < mia.Length; i++)
+		{
+			var m = mia[i];
+			if (m.Name == "ExitCode")
+			{
+				var prop = m as PropertyInfo;
+				var field = m as FieldInfo;
+				if (prop != null)
+				{
+					if (prop.CanRead && typeof(int) == prop.PropertyType && prop.GetAccessors().Length == 0)
+					{
+						return (int)prop.GetValue(null);
+					}
+				}
+				else if (field != null)
+				{
+					if (typeof(int) == field.FieldType)
+					{
+						return (int)field.GetValue(null);
+					}
+				}
+			}
+		}
+		return 0;
+	}
+	#endregion // _GetUserExitCode
 	private static readonly char[] _RestrictedChars = new char[] { ' ', '\r', '\t', '\n', '\n', '\b', '\"' };
 	#region IsStale
 	/// <summary>
@@ -459,26 +478,6 @@ partial class Program
 				result = false;
 		}
 		catch { }
-		return result;
-	}
-	/// <summary>
-	/// Indicates whether outputfile doesn't exist or is old
-	/// </summary>
-	/// <param name="inputfiles">The master files to check the date of</param>
-	/// <param name="outputfile">The output file which is compared against <paramref name="inputfiles"/></param>
-	/// <returns>True if <paramref name="outputfile"/> doesn't exist or is older than <paramref name="inputfiles"/></returns>
-	public static bool IsStale(IEnumerable<string> inputfiles, string outputfile)
-	{
-		var result = true;
-		foreach (var inputfile in inputfiles)
-		{
-			result = false;
-			if (IsStale(inputfile, outputfile))
-			{
-				result = true;
-				break;
-			}
-		}
 		return result;
 	}
 	/// <summary>
@@ -536,13 +535,13 @@ partial class Program
 	/// </summary>
 	/// <param name="t">The <see cref="TextReader"/> to examine</param>
 	/// <returns>The filename, if available, or null</returns>
-	public static string? GetFilename(TextReader t)
+	public static string GetFilename(TextReader t)
 	{
 		var sr = t as StreamReader;
-		string? result = null;
+		string result = null;
 		if (sr != null)
 		{
-			FileStream? fstm = sr.BaseStream as FileStream;
+			FileStream fstm = sr.BaseStream as FileStream;
 			if (fstm != null)
 			{
 				result = fstm.Name;
@@ -559,7 +558,7 @@ partial class Program
 	/// </summary>
 	/// <param name="t">The <see cref="TextWriter"/> to examine</param>
 	/// <returns>The filename, if available, or null</returns>
-	public static string? GetFilename(TextWriter t)
+	public static string GetFilename(TextWriter t)
 	{
 		var dtw = t as _DeferredTextWriter;
 		if (dtw != null)
@@ -567,10 +566,10 @@ partial class Program
 			return dtw.Name;
 		}
 		var sw = t as StreamWriter;
-		string? result = null;
+		string result = null;
 		if (sw != null)
 		{
-			FileStream? fstm = sw.BaseStream as FileStream;
+			FileStream fstm = sw.BaseStream as FileStream;
 			if (fstm != null)
 			{
 				result = fstm.Name;
@@ -625,7 +624,7 @@ partial class Program
 				}
 			}
 
-			a.Type = a.IsProperty ? prop!.PropertyType : field!.FieldType;
+			a.Type = a.IsProperty ? prop.PropertyType : field.FieldType;
 			a.ElementType = a.Type;
 			a.ColClear = null;
 			a.ColAdd = null;
@@ -662,7 +661,7 @@ partial class Program
 			{
 				throw new InvalidProgramException(string.Format("bool arguments such as {0} cannot be required because that doesn't make sense", a.Member.Name));
 			}
-			a.InitialValue = a.IsProperty ? prop!.GetValue(null) : field!.GetValue(null);
+			a.InitialValue = a.IsProperty ? prop.GetValue(null) : field.GetValue(null);
 			// find the type converter
 			var tca = m.GetCustomAttribute(typeof(TypeConverterAttribute), true) as TypeConverterAttribute;
 			if (tca != null)
@@ -688,11 +687,11 @@ partial class Program
 					}
 				}
 			}
-			if (a.Type == typeof(bool) && a.InitialValue!=null && ((bool)a.InitialValue))
+			if (a.Type == typeof(bool) && ((bool)a.InitialValue))
 			{
 				throw new InvalidProgramException(string.Format("bool arguments such as {0} cannot default to true because that doesn't make sense.", a.Member.Name));
 			}
-			if (a.Converter == null && a.ElementType!=null)
+			if (a.Converter == null)
 			{
 				a.Converter = TypeDescriptor.GetConverter(a.ElementType);
 				if (a.Converter != null && !a.Converter.CanConvertFrom(typeof(string)))
@@ -722,7 +721,7 @@ partial class Program
 			if (!a.IsTextReader)
 			{
 				a.IsTextWriter = a.ElementType == typeof(TextWriter);
-				if(a.IsTextWriter && string.IsNullOrWhiteSpace(a.Description))
+				if (a.IsTextWriter && string.IsNullOrWhiteSpace(a.Description))
 				{
 					a.Description = "The output file";
 					if (a.IsArray || a.IsCollection)
@@ -782,20 +781,21 @@ partial class Program
 		result.Sort((lhs, rhs) => {
 			if (-1 < lhs.Ordinal)
 			{
-				if(rhs.Ordinal>-1)
+				if (rhs.Ordinal > -1)
 				{
 					return -1;
 				}
-				if(lhs.IsOptional)
+				if (lhs.IsOptional)
 				{
-					if(rhs.IsOptional)
+					if (rhs.IsOptional)
 					{
 						return 0;
 					}
 					return 1;
-				} else
+				}
+				else
 				{
-					if(rhs.IsOptional)
+					if (rhs.IsOptional)
 					{
 						return -1;
 					}
@@ -821,14 +821,14 @@ partial class Program
 						return -1;
 					}
 					return string.Compare(lhs.Name, rhs.Name);
-				}	
+				}
 			}
 			return cmp;
 		});
 		for (int i = 0; i < result.Count - 1; ++i)
 		{
 			var info = result[i];
-			if (info.Name!.Contains("/") || info.Name!.IndexOfAny(_RestrictedChars) > -1)
+			if (info.Name.Contains("/") || info.Name.IndexOfAny(_RestrictedChars) > -1)
 			{
 				throw new InvalidProgramException(string.Format("The argument name for {0} is invalid.", info.Member.Name));
 			}
@@ -973,7 +973,7 @@ partial class Program
 			{
 				if (info.IsArray || info.IsCollection)
 				{
-					if (arg!.StartsWith("/"))
+					if (arg.StartsWith("/"))
 					{
 						throw new ArgumentException(string.Format("Expected <{0}> before {1}", info.ItemName, arg));
 					}
@@ -990,7 +990,7 @@ partial class Program
 				}
 				else
 				{
-					info.SetMemberValue(info.InstantiateItem(arg!));
+					info.SetMemberValue(info.InstantiateItem(arg));
 					++argi;
 				}
 			}
@@ -1010,6 +1010,95 @@ partial class Program
 		}
 	}
 	#endregion // _ParseArguments
+	#region CrackCommandLine
+	internal static string[] CrackCommandLine(string commandLine, out string exename, char esc = '\\')
+	{
+		exename = null;
+		var result = new List<string>();
+		var i = 0;
+		var inQuote = false;
+		var sb = new StringBuilder();
+		while (i < commandLine.Length)
+		{
+			if (!inQuote)
+			{
+				if (sb.Length == 0)
+				{
+					if (commandLine[i] == '"')
+					{
+						inQuote = true;
+						++i;
+						continue;
+					}
+				}
+				var ws = false;
+				while (char.IsWhiteSpace(commandLine[i]))
+				{
+					ws = true;
+					++i;
+				}
+				if (ws)
+				{
+					if (sb.Length > 0)
+					{
+						if (exename == null)
+						{
+							exename = sb.ToString();
+						}
+						else
+						{
+							result.Add(sb.ToString());
+						}
+						sb.Clear();
+					}
+				}
+				else
+				{
+					sb.Append(commandLine[i]);
+					++i;
+				}
+
+			}
+			else
+			{
+				if (i < commandLine.Length - 1 && commandLine[i] == esc && commandLine[i + 1] == '\"')
+				{
+					sb.Append('\"');
+					i += 2;
+				}
+				else if (commandLine[i] == '\"')
+				{
+					if (exename == null)
+					{
+						exename = sb.ToString();
+					}
+					else
+					{
+						result.Add(sb.ToString());
+					}
+					sb.Clear();
+					inQuote = false;
+					++i;
+				}
+				sb.Append(commandLine[i]);
+				++i;
+			}
+		}
+		if (sb.Length > 0)
+		{
+			if (exename == null)
+			{
+				exename = sb.ToString();
+			}
+			else
+			{
+				result.Add(sb.ToString());
+			}
+		}
+		return result.ToArray();
+	}
+	#endregion // CrackCommandLine
+
 	#region WordWrap
 	/// <summary>
 	/// Performs word wrapping
@@ -1069,7 +1158,7 @@ partial class Program
 	/// </summary>
 	public static void PrintUsage()
 	{
-		_PrintUsage(Console.Error, _ReflectArguments(typeof(Program))) ;
+		_PrintUsage(Console.Error, _ReflectArguments(typeof(Program)));
 	}
 	private static void _PrintUsage(TextWriter w, IList<_ArgInfo> arguments)
 	{
@@ -1109,7 +1198,7 @@ partial class Program
 				sb.Append(' ');
 			}
 			var info = arguments[i];
-			if (info.ItemName!.Length > nameLen)
+			if (info.ItemName.Length > nameLen)
 			{
 				nameLen = info.ItemName.Length;
 			}
@@ -1177,10 +1266,26 @@ partial class Program
 			sb.Append("  <");
 			sb.Append(info.ItemName);
 			sb.Append(">");
-			sb.Append(new string(' ', (nameLen - info.ItemName!.Length) + 1));
+			sb.Append(new string(' ', (nameLen - info.ItemName.Length) + 1));
 			if (!string.IsNullOrEmpty(info.Description))
 			{
 				sb.Append(info.Description.Trim());
+			}
+			else if (info.IsTextReader)
+			{
+				sb.Append("The input file");
+				if (info.IsArray || info.IsCollection)
+				{
+					sb.Append("s");
+				}
+			}
+			else if (info.IsTextWriter)
+			{
+				sb.Append("The output file");
+				if (info.IsArray || info.IsCollection)
+				{
+					sb.Append("s");
+				}
 			}
 			w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 		}
@@ -1200,7 +1305,7 @@ partial class Program
 		}
 		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 	}
-	#endregion // PrintUsage
+	#endregion // _PrintUsage
 	#region WriteProgress/WriteProgressBar
 	const string _ProgressTwirl = "-\\|/";
 	const char _ProgressBlock = '■';
@@ -1245,41 +1350,12 @@ partial class Program
 		output.Write(_ProgressBuffer.ToString());
 	}
 	#endregion // WriteProgress/WriteProgressBar
-	#region _GetUserExitCode
-	static int _GetUserExitCode()
-	{
-		var mia = typeof(Program).GetMembers(BindingFlags.Static | BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.NonPublic);
-		for(var i = 0;i<mia.Length;i++)
-		{
-			var m = mia[i];
-			if(m.Name == "ExitCode")
-			{
-				var prop = m as PropertyInfo;
-				var field = m as FieldInfo;
-				if(prop!=null)
-				{
-					if(prop.CanRead && typeof(int)==prop.PropertyType && prop.GetAccessors().Length==0)
-					{
-						return (int)prop.GetValue(null)!;
-					}
-				} else if(field!=null)
-				{
-					if (typeof(int) == field.FieldType)
-					{
-						return (int)field.GetValue(null)!;
-					}
-				}
-			}
-		}
-		return 0;
-	}
-	#endregion // _GetUserExitCode
 	static int Main(string[] args)
 	{
 #if !DEBUG
 		var parsedArgs = false;
 #endif // !DEBUG
-		IList<_ArgInfo>? argInfos = null;
+		IList<_ArgInfo> argInfos = null;
 		try
 		{
 			argInfos = _ReflectArguments(typeof(Program));
