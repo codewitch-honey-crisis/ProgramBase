@@ -8,7 +8,7 @@ static partial class Program
 {
 	[CmdArg(Ordinal = 0,Required =true)]
 	public static TextReader[] Inputs = null;
-	[CmdArg("output",Description = "The output file. Defaults to <stdout>")]
+	[CmdArg("output")]
 	public static TextWriter Output = Console.Out;
 	[CmdArg("id", Description = "The guid id", ItemName = "guid")]
 	public static Guid Id = Guid.Empty;

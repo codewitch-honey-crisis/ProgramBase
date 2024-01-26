@@ -690,10 +690,26 @@ partial class Program
 			if (!a.IsTextReader)
 			{
 				a.IsTextWriter = a.ElementType == typeof(TextWriter);
+				if (a.IsTextWriter && string.IsNullOrWhiteSpace(a.Description))
+				{
+					a.Description = "The output file";
+					if (a.IsArray || a.IsCollection)
+					{
+						a.Description += "s";
+					}
+				}
 			}
 			else
 			{
 				a.IsTextWriter = false;
+				if (a.IsTextReader && string.IsNullOrWhiteSpace(a.Description))
+				{
+					a.Description = "The input file";
+					if (a.IsArray || a.IsCollection)
+					{
+						a.Description += "s";
+					}
+				}
 			}
 			if (string.IsNullOrWhiteSpace(cmdArgAttr.ItemName))
 			{

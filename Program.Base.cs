@@ -721,10 +721,26 @@ partial class Program
 			if (!a.IsTextReader)
 			{
 				a.IsTextWriter = a.ElementType == typeof(TextWriter);
+				if(a.IsTextWriter && string.IsNullOrWhiteSpace(a.Description))
+				{
+					a.Description = "The output file";
+					if (a.IsArray || a.IsCollection)
+					{
+						a.Description += "s";
+					}
+				}
 			}
 			else
 			{
 				a.IsTextWriter = false;
+				if (a.IsTextReader && string.IsNullOrWhiteSpace(a.Description))
+				{
+					a.Description = "The input file";
+					if (a.IsArray || a.IsCollection)
+					{
+						a.Description += "s";
+					}
+				}
 			}
 			if (string.IsNullOrWhiteSpace(cmdArgAttr.ItemName))
 			{
@@ -1164,22 +1180,6 @@ partial class Program
 			if (!string.IsNullOrEmpty(info.Description))
 			{
 				sb.Append(info.Description.Trim());
-			}
-			else if (info.IsTextReader)
-			{
-				sb.Append("The input file");
-				if (info.IsArray || info.IsCollection)
-				{
-					sb.Append("s");
-				}
-			}
-			else if (info.IsTextWriter)
-			{
-				sb.Append("The output file");
-				if (info.IsArray || info.IsCollection)
-				{
-					sb.Append("s");
-				}
 			}
 			w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 		}
