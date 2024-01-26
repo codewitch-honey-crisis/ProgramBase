@@ -1293,53 +1293,43 @@ partial class Program
 	{
 		if (width == 0)
 		{
-			width = Console.WindowWidth / 2;
+			width = Console.WindowWidth;
 		}
-		string[] originalLines = text.Split(new string[] { " " },
+		if (indent < 0) throw new ArgumentOutOfRangeException(nameof(indent));
+		if (width < 0) throw new ArgumentOutOfRangeException(nameof(width));
+		if (width>0 && width<indent)
+		{
+			throw new ArgumentOutOfRangeException(nameof(width));
+		}
+		string[] words = text.Split(new string[] { " " },
 			StringSplitOptions.None);
 
 		StringBuilder result = new StringBuilder();
-		StringBuilder actualLine = new StringBuilder();
 		double actualWidth = startOffset;
-		var first = true;
-		foreach (var item in originalLines)
+		for(int i = 0;i<words.Length;i++)
 		{
-			actualLine.Append(item + " ");
-			actualWidth += item.Length;
-
-			if (actualWidth > width)
+			var word = words[i];
+			if (i > 0)
 			{
-				if (result.Length > 0)
+				if (actualWidth + word.Length >= width)
 				{
 					result.Append(Environment.NewLine);
 					if (indent > 0)
 					{
 						result.Append(new string(' ', indent));
 					}
-					first = false;
-
+					actualWidth = indent;
 				}
-				result.Append(actualLine.ToString());
-				actualLine.Clear();
-				actualWidth = indent;
-			}
-
-		}
-		if (actualLine.Length > 0)
-		{
-			if (!first)
-			{
-				result.Append(Environment.NewLine);
-				if (indent > 0)
+				else
 				{
-					result.Append(new string(' ', indent));
-
+					result.Append(' ');
+					++actualWidth;
 				}
 			}
-			result.Append(actualLine.ToString());
-
+			result.Append(word);
+			actualWidth += word.Length;
 		}
-		return result.ToString().TrimEnd();
+		return result.ToString();
 	}
 	public static int Main(string[] args)
 	{
