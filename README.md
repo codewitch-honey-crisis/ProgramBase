@@ -79,7 +79,13 @@ internal partial class Program
 		{
 			foreach (var input in Inputs)
 			{
-				Output.WriteLine(WordWrap(input.ReadToEnd(), Width));
+				// do this because stdin requires it
+				string line;
+				while((line = input.ReadLine()) != null)
+				{
+					Output.WriteLine(WordWrap(line, Width));
+				}
+				
 			}
 		} else
 		{
@@ -87,7 +93,6 @@ internal partial class Program
 		}
 	}
 }
-
 ```
 This application presents the following using screen:
 ```
