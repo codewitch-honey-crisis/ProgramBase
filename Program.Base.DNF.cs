@@ -1,13 +1,53 @@
 ﻿using System;
-using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
+using System.Net;
 using System.Reflection;
 using System.Text;
+#region CmdArgAttribute
+/// <summary>
+/// Indicates the field or property is a command line argument
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+internal sealed class CmdArgAttribute : System.Attribute
+{
+	/// <summary>
+	/// The name on the command line or null or empty to use a camel cased member name. Ignored for ordinal arguments
+	/// </summary>
+	public string Name { get; set; } = null;
+	/// <summary>
+	/// The ordinal position of the argument. -1 if the name is used
+	/// </summary>
+	public int Ordinal { get; set; } = -1;
+	/// <summary>
+	/// True if it is required
+	/// </summary>
+	public bool Required { get; set; } = false;
+	/// <summary>
+	/// A description of the field for the using screen
+	/// </summary>
+	public string Description { get; set; } = null;
+	/// <summary>
+	/// The name for value items
+	/// </summary>
+	public string ItemName { get; set; } = null;
+	/// <summary>
+	/// Constructs a new instance
+	/// </summary>
+	/// <param name="name">The name of the switch on the command line or ignored for ordinal arguments</param>
+	/// <param name="ordinal">The ordinal position if the argument or -1 if it's named.</param>
+	/// <param name="required">True if it is required</param>
+	/// <param name="description">A description of the field for the using screen</param>
+	/// <param name="itemName">The name for value items</param>
+	public CmdArgAttribute(string name = null, int ordinal = -1, bool required = false, string description = null, string itemName = null) { Name = name; Required = required; Description = description; ItemName = itemName; }
+}
+#endregion // CmdArgAttribute
+#region ProgramInfo
 /// <summary>
 /// Provides basic information about the executing program
 /// </summary>
-public struct ProgramInfo
+internal struct ProgramInfo
 {
 	/// <summary>
 	/// The codebase of the executable
@@ -26,157 +66,22 @@ public struct ProgramInfo
 	/// </summary>
 	public readonly string Description;
 	/// <summary>
+	/// A copyright of the assembly used for the using screen
+	/// </summary>
+	public readonly string Copyright;
+	/// <summary>
 	/// The version of the assembly used for the using screen
 	/// </summary>
 	public readonly Version Version;
-	public ProgramInfo(string codeBase, string filename, string name, string description, Version version)
+	public static readonly ProgramInfo This = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion());
+	private ProgramInfo(string codeBase, string filename, string name, string description, string copyright, Version version)
 	{
 		CodeBase = codeBase;
 		Filename = filename;
 		Name = name;
 		Description = description;
+		Copyright = copyright;
 		Version = version;
-	}
-}
-/// <summary>
-/// Indicates the field or property is a command line argument
-/// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
-public sealed class CmdArgAttribute : System.Attribute
-{
-	/// <summary>
-	/// The name on the command line or &lt;default&gt; for the first unnamed argument
-	/// </summary>
-	public string Name { get; set; } = null;
-	/// <summary>
-	/// True if it is required
-	/// </summary>
-	public bool Required { get; set; } = false;
-	/// <summary>
-	/// A description of the field for the using screen
-	/// </summary>
-	public string Description { get; set; } = null;
-	/// <summary>
-	/// The name for value items
-	/// </summary>
-	public string ElementName { get; set; } = null;
-	/// <summary>
-	/// Constructs a new instance
-	/// </summary>
-	/// <param name="name">The name on the command line or &lt;default&gt; for the first unnamed argument</param>
-	/// <param name="required">True if it is required</param>
-	/// <param name="description">A description of the field for the using screen</param>
-	/// <param name="elementName">The name for value items</param>
-	public CmdArgAttribute(string name = null, bool required = false, string description = null, string elementName = null) { Name = name; Required = required; Description = description; ElementName = elementName; }
-}
-partial class Program
-{
-	private sealed class _DemandTextWriter : TextWriter
-	{
-		readonly string _name;
-		StreamWriter _writer = null;
-		void EnsureWriter()
-		{
-			if (_writer == null)
-			{
-				_writer = new StreamWriter(_name, false);
-			}
-		}
-		public override Encoding Encoding {
-			get {
-				if(_writer==null)
-				{
-					return Encoding.UTF8;
-				}
-				return _writer.Encoding;
-			}
-		}
-		public _DemandTextWriter(string path)
-		{
-			_name = path;
-		}
-		public string Name {
-			get {
-				return _name;
-			}
-		}
-		protected override void Dispose(bool disposing)
-		{
-			if (disposing)
-			{
-				if (_writer != null)
-				{
-					_writer.Close();
-					_writer = null;
-				}
-			}
-			base.Dispose(disposing);
-		}
-		public override void Close()
-		{
-			if (_writer != null)
-			{
-				_writer.Close();
-			}
-			base.Close();
-		}
-		public override void Write(string value)
-		{
-			EnsureWriter();
-			_writer.Write(value);
-		}
-		public override void WriteLine(string value)
-		{
-			EnsureWriter();
-			_writer.WriteLine(value);
-		}
-	}
-	/// <summary>
-	/// Information about the executing assembly
-	/// </summary>
-	internal static readonly ProgramInfo Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetVersion());
-
-	const string _ProgressTwirl = "-\\|/";
-	const char _ProgressBlock = '■';
-	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
-	const string _ProgressBackOne = "\b";
-	static readonly StringBuilder _ProgressBuffer = new StringBuilder();
-	/// <summary>
-	/// Writes an indeterminate progress indicator to the screen
-	/// </summary>
-	/// <param name="progress">The integer progress indicator. Just keep incrementing this value.</param>
-	/// <param name="update">False if this is the initial call, otherwise true</param>
-	/// <param name="output">The <see cref="TextWriter"/> to write to</param>
-	internal static void WriteProgress(int progress, bool update, TextWriter output)
-	{
-		_ProgressBuffer.Clear();
-		if (update)
-			_ProgressBuffer.Append(_ProgressBackOne);
-		_ProgressBuffer.Append(_ProgressTwirl[progress % _ProgressTwirl.Length]);
-		output.Write(_ProgressBuffer.ToString());
-	}
-	/// <summary>
-	/// Writes a progress bar indicator to the screen
-	/// </summary>
-	/// <param name="progress">The integer progress indicator. Should be 0 to 100</param>
-	/// <param name="update">False if this is the initial call, otherwise true</param>
-	/// <param name="output">The <see cref="TextWriter"/> to write to</param>
-	internal static void WriteProgressBar(int percent, bool update, TextWriter output)
-	{
-		_ProgressBuffer.Clear();
-		if (update)
-			_ProgressBuffer.Append(_ProgressBack);
-		_ProgressBuffer.Append("[");
-		var p = (int)((percent / 10f) + .5f);
-		for (var i = 0; i < 10; ++i)
-		{
-			if (i >= p)
-				_ProgressBuffer.Append(' ');
-			else
-				_ProgressBuffer.Append(_ProgressBlock);
-		}
-		_ProgressBuffer.Append(string.Format("] {0,3:##0}%", percent));
-		output.Write(_ProgressBuffer.ToString());
 	}
 	static string _GetCodeBase()
 	{
@@ -243,927 +148,289 @@ partial class Program
 		catch { }
 		return null;
 	}
-	private static string _GetCmdArgName(MemberInfo member)
+	static string _GetCopyright()
 	{
-		if (!(member is FieldInfo) && !(member is PropertyInfo))
+		try
 		{
-			return null;
-		}
-		var cmdArg = member.GetCustomAttribute(typeof(CmdArgAttribute), true);
-		if (cmdArg != null)
-		{
-			var ca = cmdArg as CmdArgAttribute;
-			var result = ca.Name;
-			if (string.IsNullOrWhiteSpace(result))
+			foreach (var attr in Assembly.GetExecutingAssembly().CustomAttributes)
 			{
-				result = member.Name;
+				if (typeof(AssemblyCopyrightAttribute) == attr.AttributeType)
+				{
+					var str = attr.ConstructorArguments[0].Value as string;
+					if (!string.IsNullOrWhiteSpace(str))
+					{
+						return str;
+					}
+				}
 			}
-			return result;
 		}
+		catch { }
 		return null;
 	}
-	private static string _GetCmdArgElemName(MemberInfo member)
+}
+#endregion // ProgramInfo
+partial class Program
+{
+	internal static ProgramInfo Info {
+		get {
+			return ProgramInfo.This;
+		}
+	}
+	#region _DeferredTextWriter
+	private sealed class _DeferredTextWriter : TextWriter
 	{
-		var result = "item";
-		if ((member is FieldInfo) || (member is PropertyInfo))
+		readonly string _name;
+		StreamWriter _writer = null;
+		void EnsureWriter()
 		{
-			var cmdArg = member.GetCustomAttribute(typeof(CmdArgAttribute), true);
-			if (cmdArg != null)
+			if (_writer == null)
 			{
-				var ca = cmdArg as CmdArgAttribute;
-				if (!string.IsNullOrWhiteSpace(ca.ElementName))
+				_writer = new StreamWriter(_name, false);
+			}
+		}
+		public override Encoding Encoding {
+			get {
+				if (_writer == null)
 				{
-					result = ca.ElementName;
+					return Encoding.UTF8;
+				}
+				return _writer.Encoding;
+			}
+		}
+		public _DeferredTextWriter(string path)
+		{
+			_name = path;
+		}
+		public string Name {
+			get {
+				return _name;
+			}
+		}
+		protected override void Dispose(bool disposing)
+		{
+			if (disposing)
+			{
+				if (_writer != null)
+				{
+					_writer.Close();
+					_writer = null;
 				}
 			}
+			base.Dispose(disposing);
 		}
-		return result;
-	}
-	private static bool _GetCmdArgIsList(MemberInfo member)
-	{
-		if (!(member is FieldInfo) && !(member is PropertyInfo))
+		public override void Close()
 		{
-			return false;
-		}
-		var t = _CmdArgGetType(member);
-		if (t.IsArray)
-		{
-			return true;
-		}
-		foreach (var it in t.GetInterfaces())
-		{
-			if (!it.IsGenericType) continue;
-			var tdef = it.GetGenericTypeDefinition();
-			if (typeof(ICollection<>) == tdef)
+			if (_writer != null)
 			{
-
-				return true;
-
+				_writer.Close();
+			}
+			base.Close();
+		}
+		public override void Write(string value)
+		{
+			EnsureWriter();
+			_writer.Write(value);
+		}
+		public override void WriteLine(string value)
+		{
+			EnsureWriter();
+			_writer.WriteLine(value);
+		}
+	}
+	#endregion // _DeferredTextWriter
+	#region _ArgInfo
+	private struct _ArgInfo
+	{
+		public string Name;
+		public int Ordinal;
+		public string Description;
+		public string ItemName;
+		public MemberInfo Member;
+		public bool IsOptional;
+		public bool IsProperty;
+		public bool IsTextReader;
+		public bool IsTextWriter;
+		public bool HasArgument {
+			get { return ElementType != typeof(bool); }
+		}
+		public Type Type;
+		public Type ElementType;
+		public bool IsCollection {
+			get {
+				return ColAdd != null && ColClear != null;
 			}
 		}
-		return false;
-	}
-	private static string _GetCmdArgDesc(MemberInfo member)
-	{
-		if (!(member is FieldInfo) && !(member is PropertyInfo))
+		public MethodInfo ColAdd;
+		public MethodInfo ColClear;
+		public MethodInfo Parse;
+		public TypeConverter Converter;
+		public bool IsArray;
+		public object InitialValue;
+		public object GetMemberValue()
 		{
-			return null;
-		}
-		var cmdarg = member.GetCustomAttribute(typeof(CmdArgAttribute), true) as CmdArgAttribute;
-		if (cmdarg != null)
-		{
-			var result = cmdarg.Description;
-			if (result != null)
+			if (IsProperty)
 			{
-				return result;
+				return ((PropertyInfo)Member).GetValue(null);
 			}
+			return ((FieldInfo)Member).GetValue(null);
 		}
-		var desc = member.GetCustomAttribute(typeof(DescriptionAttribute), true) as DescriptionAttribute;
-		if (desc != null)
+		public void SetMemberValue(object value)
 		{
-			var result = desc.Description;
-			if (string.IsNullOrWhiteSpace(result))
+			if (IsProperty)
 			{
-				result = "";
-			}
-			return result;
-		}
-		return "";
-	}
-	static Dictionary<string, MemberInfo> _CmdArgsReflect()
-	{
-		var mia = typeof(Program).GetMembers(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-		var result = new Dictionary<string, MemberInfo>(mia.Length);
-		for (int i = 0; i < mia.Length; i++)
-		{
-			var m = mia[i];
-			var arg = _GetCmdArgName(m);
-			if (arg != null)
-			{
-				// this is a cmd arg
-				result.Add(arg, m);
-			}
-		}
-		return result;
-	}
-	static CmdArgAttribute _CmdArgAttr(MemberInfo m)
-	{
-		return m.GetCustomAttribute(typeof(CmdArgAttribute), true) as CmdArgAttribute;
-	}
-	private static void _CmdArgsCrack(string[] args, Dictionary<string, MemberInfo> mappings)
-	{
-		if (mappings.Count == 0 && args.Length > 0)
-		{
-			throw new ArgumentException(string.Format("Unrecognized argument {0}", args[0]));
-		}
-		var argi = 0;
-		string defaultname = null;
-		MemberInfo defaultMember;
-		CmdArgAttribute cmdArgAttr;
-		var found = new HashSet<string>();
-		mappings.TryGetValue("<default>", out defaultMember);
-		if (defaultMember != null)
-		{
-			found.Add("<default>");
-			cmdArgAttr = _CmdArgAttr(defaultMember);
-			if (args.Length == 0 || args[0][0] == '/')
-			{
-
-				if (cmdArgAttr.Required)
-					throw new ArgumentException(string.Format("<default> must be specified."));
+				((PropertyInfo)Member).SetValue(null, value);
 			}
 			else
 			{
-				var o = _CmdArgGetDefaultValue(defaultMember);
-				Type et = _CmdArgGetType(defaultMember);
-				var isarr = et.IsArray;
-				MethodInfo coladd = null;
-				MethodInfo colclear = null;
-				MethodInfo parse = null;
-				if (isarr)
+				((FieldInfo)Member).SetValue(null, value);
+			}
+		}
+		public object BeginList()
+		{
+			if (IsArray)
+			{
+				var arr = Array.CreateInstance(ElementType, 0);
+				SetMemberValue(arr);
+				return arr;
+			}
+			else if (IsCollection)
+			{
+				var col = GetMemberValue();
+				if (col != null)
 				{
-					et = et.GetElementType();
+					ColClear.Invoke(col, new object[0]);
 				}
 				else
 				{
-					foreach (var it in et.GetInterfaces())
-					{
-						if (!it.IsGenericType) continue;
-						var tdef = it.GetGenericTypeDefinition();
-						if (typeof(ICollection<>) == tdef)
-						{
+					col = Activator.CreateInstance(this.Type);
+					SetMemberValue(col);
+				}
+				return col;
+			}
+			throw new InvalidOperationException("The argument is not a list");
+		}
+		public object AddToList(string input)
+		{
+			if (IsArray)
+			{
+				Array arr = (Array)GetMemberValue();
+				var newArr = Array.CreateInstance(ElementType, arr.Length + 1);
+				arr.CopyTo(newArr, 0);
+				newArr.SetValue(InstantiateItem(input), arr.Length);
+				SetMemberValue(newArr);
+				return newArr;
 
-							et = et.GenericTypeArguments[0];
-							coladd = it.GetMethod( "Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null,new Type[] { et },null);
-							colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes,null);
-						}
+			}
+			else if (IsCollection)
+			{
+				var col = GetMemberValue();
+				ColAdd.Invoke(col, new object[] { InstantiateItem(input) });
+				return col;
+			}
+			throw new InvalidOperationException("The argument is not a list");
+		}
+		void _DestroyItem(object obj)
+		{
+			if (obj != null)
+			{
+				if (IsTextReader)
+				{
+					if (!object.ReferenceEquals(obj, Console.In))
+					{
+						((TextReader)obj).Close();
 					}
 				}
-				var isreader = typeof(TextReader) == et;
-				var iswriter = typeof(TextWriter) == et;
-
-				TypeConverter conv = _CmdArgGetConv(defaultMember, et);
-				if (conv == null && !isarr && coladd == null)
+				else if (IsTextWriter)
 				{
-					var bt = et;
-					while (parse == null && bt != null)
+					if (!object.ReferenceEquals(obj, Console.Out) && !object.ReferenceEquals(obj, Console.Error))
 					{
-						try
-						{
-							parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public);
-						}
-						catch (AmbiguousMatchException)
-						{
-							parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(string) },null) ;
-
-						}
-						bt = bt.BaseType;
+						((TextWriter)obj).Close();
 					}
-
-				}
-				if (!isarr && coladd == null && !isreader && !iswriter && !(o is string) && conv == null)
-					throw new InvalidProgramException(string.Format("Type for {0} must be string or a collection, array or convertible type", defaultname));
-				if (isarr)
-				{
-					o = Array.CreateInstance(et, 0);
-					_CmdArgSetValue(defaultMember, o);
-				}
-				if (colclear != null)
-				{
-					if (o != null)
-					{
-						colclear.Invoke(o, null);
-					}
-				}
-				for (; argi < args.Length; ++argi)
-				{
-					var arg = args[argi];
-					if (arg[0] == '/') break;
-					if (isarr)
-					{
-						var arr = (Array)o;
-						Array newArr = null;
-						if (arr == null)
-						{
-							newArr = Array.CreateInstance(et, 1);
-						}
-						else
-						{
-							newArr = Array.CreateInstance(et, arr.Length + 1);
-							Array.Copy(arr, newArr, newArr.Length - 1);
-						}
-						object v;
-						v = arg;
-						if(isreader==true)
-						{
-							try
-							{
-								v = new StreamReader(arg);
-							} catch(Exception e)
-							{
-								throw new ArgumentException("File not found", arg, e);
-							}
-						} else if(iswriter==true)
-						{
-							v = new _DemandTextWriter(arg);
-						} else
-						if (conv == null)
-						{
-							if (parse != null)
-							{
-
-								v = parse.Invoke(null, new object[] { arg });
-							}
-						}
-						else
-						{
-							v = conv.ConvertFromInvariantString(arg);
-						}
-						newArr.SetValue(v, newArr.Length - 1);
-						_CmdArgSetValue(defaultMember, newArr);
-						o = newArr;
-					}
-					else if (coladd != null)
-					{
-						if (o == null)
-						{
-							o = Activator.CreateInstance(_CmdArgGetType(defaultMember));
-							_CmdArgSetValue(defaultMember, o);
-						}
-						object v;
-						v = arg;
-						if (isreader == true)
-						{
-							v = new StreamReader(arg);
-						}
-						else if (iswriter == true)
-						{
-							v = new _DemandTextWriter(arg);
-						}
-						else
-						if (conv == null)
-						{
-							if (parse != null)
-							{
-
-								v = parse.Invoke(null, new object[] { arg });
-							}
-						}
-						else
-						{
-							v = conv.ConvertFromInvariantString(arg);
-						}
-						coladd.Invoke(o, new object[] { v });
-					} else if(isreader)
-					{
-
-						StreamReader reader;
-						try
-						{
-							reader = new StreamReader(arg);
-						}
-						catch(Exception ex)
-						{
-							throw new ArgumentException("The file could could not be found", arg, ex);
-						}
-						_CmdArgSetValue(defaultMember, reader);
-					} else if(iswriter)
-					{
-						_CmdArgSetValue(defaultMember, new _DemandTextWriter(arg));
-					}
-					else if ("" == o as string)
-					{
-						_CmdArgSetValue(defaultMember, arg);
-					}
-					else if (conv != null)
-					{
-						_CmdArgSetValue(defaultMember, conv.ConvertFromInvariantString(arg));
-					}
-					else if (parse != null)
-					{
-						_CmdArgSetValue(defaultMember, parse.Invoke(null, new object[] { arg }));
-					}
-					else
-						throw new ArgumentException(string.Format("Only one <{0}> value may be specified.", defaultname));
-				}
-			}
-		}
-		for (; argi < args.Length; ++argi)
-		{
-			var arg = args[argi];
-			if (string.IsNullOrWhiteSpace(arg) || arg[0] != '/')
-			{
-				throw new ArgumentException(string.Format("Expected switch instead of {0}", arg));
-			}
-			arg = arg.Substring(1);
-			if (!char.IsLetterOrDigit(arg, 0))
-				throw new ArgumentException("Invalid switch /{0}", arg);
-			MemberInfo member;
-			object o;
-
-			if (!mappings.TryGetValue(arg, out member))
-			{
-				throw new InvalidProgramException(string.Format("Unknown switch /{0}", arg));
-			}
-
-			Type et = _CmdArgGetType(member);
-			o = _CmdArgGetValueRaw(member);
-			var isarr = et.IsArray;
-			MethodInfo coladd = null;
-			MethodInfo colclear = null;
-			MethodInfo parse = null;
-			var isbool = et == typeof(bool);
-			var isstr = et == typeof(string);
-			if (isarr)
-			{
-				et = et.GetElementType();
-			}
-			else
-			{
-				foreach (var it in et.GetInterfaces())
-				{
-					if (!it.IsGenericType) continue;
-					var tdef = it.GetGenericTypeDefinition();
-					if (typeof(ICollection<>) == tdef)
-					{
-						et = et.GenericTypeArguments[0];
-						coladd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance,null, new Type[] { et },null);
-						colclear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null,Type.EmptyTypes,null);
-						break;
-
-					}
-				}
-			}
-			var isreader = typeof(TextReader) == et;
-			var iswriter = typeof(TextWriter) == et;
-
-			TypeConverter conv = _CmdArgGetConv(member, et);
-			if (conv != null)
-			{
-				if (!conv.CanConvertFrom(typeof(string)))
-				{
-					conv = null;
-				}
-			}
-			if (conv == null)
-			{
-				var bt = et;
-				while (parse == null && bt != null)
-				{
-					try
-					{
-						parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public);
-					}
-					catch (AmbiguousMatchException)
-					{
-						parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null,new Type[] { typeof(string) },null);
-
-					}
-					bt = bt.BaseType;
-				}
-
-			}
-			if (isarr)
-			{
-				o = Array.CreateInstance(et, 0);
-				_CmdArgSetValue(member, o);
-			}
-			if (colclear != null)
-			{
-				if (o != null)
-				{
-					colclear.Invoke(o, null);
-				}
-			}
-			if (isarr || coladd != null)
-			{
-				while (++argi < args.Length)
-				{
-					var sarg = args[argi];
-					if (sarg[0] == '/')
-					{
-						--argi;
-						break;
-					}
-					if (isarr)
-					{
-
-						var arr = (Array)o;
-						Array newArr = null;
-						if (arr == null)
-						{
-							newArr = Array.CreateInstance(et, 1);
-						}
-						else
-						{
-							newArr = Array.CreateInstance(et, arr.Length + 1);
-							Array.Copy(arr, newArr, newArr.Length - 1);
-						}
-						object v = sarg;
-						if(isreader)
-						{
-							try
-							{
-								v = new StreamReader(sarg);
-							}
-							catch(Exception ex)
-							{
-								throw new ArgumentException("The file could not be found", arg, ex);
-							}
-						} else if(iswriter)
-						{
-							v = new _DemandTextWriter(sarg);
-						} else
-						if (conv == null)
-						{
-							if (parse != null)
-							{
-
-								v = parse.Invoke(null, new object[] { sarg });
-							}
-						}
-						else
-						{
-							v = conv.ConvertFromInvariantString(sarg);
-						}
-						newArr.SetValue(v, arr.Length - 1);
-						o = newArr;
-						_CmdArgSetValue(member, newArr);
-
-					}
-					else if (coladd != null)
-					{
-						if (o == null)
-						{
-							o = Activator.CreateInstance(_CmdArgGetType(member));
-							_CmdArgSetValue(member, o);
-						}
-						object v = sarg;
-						if (conv == null)
-						{
-							if (parse != null)
-							{
-
-								v = parse.Invoke(null, new object[] { sarg });
-							}
-						}
-						else
-						{
-							v = conv.ConvertFromInvariantString(sarg);
-						}
-						coladd.Invoke(o, new object[] { v });
-					}
-				}
-			} else if(isreader)
-			{
-				if (argi == args.Length - 1)
-					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
-				_CmdArgSetValue(member, new StreamReader(args[++argi]));
-			} else if(iswriter)
-			{
-				if (argi == args.Length - 1)
-					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
-				_CmdArgSetValue(member, new _DemandTextWriter(args[++argi]));
-			}
-			else if (isstr)
-			{
-				if (argi == args.Length - 1)
-					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
-				var sarg = args[++argi];
-				member = mappings[arg];
-				o = _CmdArgGetValueRaw(member);
-				if (!found.Contains(member.Name))
-				{
-					_CmdArgSetValue(member, sarg);
-				}
-				else
-					throw new ArgumentException(string.Format("Only one <{0}> value may be specified.", arg));
-			}
-			else if (isbool)
-			{
-				if (o is bool && (bool)o)
-				{
-					throw new ArgumentException(string.Format("Only one /{0} switch may be specified.", arg));
-				}
-				_CmdArgSetValue(member, true);
-			}
-			else if (conv != null)
-			{
-				if (argi == args.Length - 1)
-					throw new ArgumentException(string.Format("Missing value for /{0}", arg));
-				_CmdArgSetValue(member, conv.ConvertFromInvariantString(args[++argi]));
-			}
-			else if (parse != null)
-			{
-				_CmdArgSetValue(member, parse.Invoke(o, new object[] { args[++argi] }));
-			}
-			else
-				throw new InvalidProgramException(string.Format("Type for {0} must be a boolean, a string, a string collection, a string array, or a convertible type", arg));
-			found.Add(arg);
-		}
-		foreach (var map in mappings)
-		{
-			if (_CmdArgAttr(map.Value).Required)
-			{
-				if (!found.Contains(map.Key))
-				{
-					throw new ArgumentException(string.Format("Missing required switch /{0}", map.Key));
-				}
-			}
-		}
-	}
-	private static object _CmdArgGetDefaultValue(MemberInfo m)
-	{
-		if (m == null) return null;
-		var dva = m.GetCustomAttribute(typeof(DefaultValueAttribute), true);
-		if (dva != null)
-		{
-			var tdva = (DefaultValueAttribute)dva;
-			if (tdva.Value != null)
-			{
-				return tdva.Value;
-			}
-		}
-		var pi = m as PropertyInfo;
-		if (pi != null)
-		{
-			return pi.GetValue(null);
-		}
-		var fi = m as FieldInfo;
-		if (fi != null)
-		{
-			return fi.GetValue(null);
-		}
-		return null;
-	}
-	private static TypeConverter _CmdArgGetConv(MemberInfo m, Type et)
-	{
-		TypeConverter result = null;
-		var attr = m.GetCustomAttribute(typeof(TypeConverterAttribute), true) as TypeConverterAttribute;
-		if (attr != null)
-		{
-			Type t = Type.GetType(attr.ConverterTypeName);
-			if (t != null)
-			{
-				result = Activator.CreateInstance(t) as TypeConverter;
-				if (result!=null && !result.CanConvertFrom(typeof(string)))
-				{
-					result = null;
-				}
-			}
-		}
-		if (result == null)
-		{
-			result = TypeDescriptor.GetConverter(et);
-			if (!result.CanConvertFrom(typeof(string)))
-			{
-				result = null;
-			}
-		}
-		return result;
-	}
-	private static object _CmdArgGetValueRaw(MemberInfo m)
-	{
-		if (m == null) return null;
-		var pi = m as PropertyInfo;
-		if (pi != null)
-		{
-			return pi.GetValue(null);
-		}
-		var fi = m as FieldInfo;
-		if (fi != null)
-		{
-			return fi.GetValue(null);
-		}
-		return null;
-	}
-	private static object[] _CmdArgGetValues(MemberInfo m)
-	{
-		if (m == null) return null;
-		var pi = m as PropertyInfo;
-		object o = null;
-		if (pi != null)
-		{
-			o = pi.GetValue(null);
-		}
-		var fi = m as FieldInfo;
-		if (fi != null)
-		{
-			o= fi.GetValue(null);
-		}
-		if(o==null)
-		{
-			if(_GetCmdArgIsList(m))
-			{
-				return new object[0];
-			}
-			return new object[] { null };
-		}
-		if(_GetCmdArgIsList(m))
-		{
-			if (o.GetType().IsArray)
-			{
-				var arr = (Array)o;
-				var result = new object[arr.Length];
-				Array.Copy(arr, result, arr.Length);
-				return result;
-			} else
-			{
-				var col = o as System.Collections.ICollection;
-				if(o==null) { throw new NotSupportedException("This collection cannot be retrieved"); }
-				var result = new object[col.Count];
-				col.CopyTo(result, 0);
-				return result;
-			}
-		}
-		return new object[] { o };
-	}
-	private static void _CmdArgSetValue(MemberInfo m, object v)
-	{
-		if (m == null) return;
-		var pi = m as PropertyInfo;
-		if (pi != null)
-		{
-			pi.SetValue(null, v);
-			return;
-		}
-		var fi = m as FieldInfo;
-		if (fi != null)
-		{
-			fi.SetValue(null, v);
-		}
-	}
-	private static Type _CmdArgGetType(MemberInfo m)
-	{
-		if (m == null) return null;
-
-		var pi = m as PropertyInfo;
-		if (pi != null)
-		{
-			return pi.PropertyType;
-		}
-		var fi = m as FieldInfo;
-		if (fi != null)
-		{
-			return fi.FieldType;
-		}
-		return null;
-	}
-	private static Type _CmdArgGetElemType(MemberInfo m)
-	{
-		var t = _CmdArgGetType(m);
-		if (t == null) return null;
-		if (t.IsArray)
-		{
-			return t.GetElementType();
-		}
-		foreach (var it in t.GetInterfaces())
-		{
-			if (!it.IsGenericType) continue;
-			var tdef = it.GetGenericTypeDefinition();
-			if (typeof(ICollection<>) == tdef)
-			{
-
-				return tdef.GetGenericArguments()[0];
-
-			}
-		}
-		return t;
-	}
-	/// <summary>
-	/// Prints the Usage screen
-	/// </summary>
-	/// <param name="width">The width of the display, in characters. Defaults to approximate the console window width</param>
-	internal static void PrintUsage(int width = 0)
-	{
-		if (width == 0)
-		{
-			width = Console.WindowWidth;
-		}
-		var mappings = _CmdArgsReflect();
-		TextWriter w = Console.Error;
-		var sb = new StringBuilder();
-		var sba = new StringBuilder();
-		sb.Append("Usage: ");
-		sb.Append(Path.GetFileNameWithoutExtension(Info.Filename));
-		sb.Append(" ");
-		var descmap = new Dictionary<string, string>();
-		var remaining = width - sb.Length;
-		int maxNameLen = 2;
-		foreach (var m in mappings)
-		{
-			sba.Clear();
-			if (remaining < 0)
-			{
-				sb.Append(Environment.NewLine);
-				remaining = width;
-			}
-			CmdArgAttribute attr = _CmdArgAttr(m.Value);
-			string desc = _GetCmdArgDesc(m.Value);
-			var list = _GetCmdArgIsList(m.Value);
-			var name = _GetCmdArgName(m.Value);
-			var type = _CmdArgGetType(m.Value);
-			if (!string.IsNullOrWhiteSpace(desc))
-			{
-				descmap.Add(m.Key, desc);
-			}
-			else
-			{
-				descmap.Add(m.Key, "");
-			}
-			if (!attr.Required)
-			{
-				sba.Append("[ ");
-			}
-			if (attr.Name != "<default>")
-			{
-				if ((m.Key.Length + 1) > maxNameLen)
-				{
-					maxNameLen = m.Key.Length + 1;
-				}
-
-				sba.Append('/');
-				sba.Append(attr.Name);
-				// doesn't have arguments:
-				if (type != typeof(bool))
-				{
-					sba.Append(' ');
-				}
-			}
-			else
-			{
-				if ((m.Key.Length) > maxNameLen)
-				{
-					maxNameLen = m.Key.Length;
-				}
-
-			}
-			if (remaining - sba.Length < 0)
-			{
-				sb.Append(Environment.NewLine);
-				sb.Append("    ");
-				remaining = width - 4;
-			}
-			else
-			{
-				remaining -= sba.Length;
-			}
-			sb.Append(sba);
-			sba.Clear();
-			var itemName = _GetCmdArgElemName(m.Value);
-
-			if (list)
-			{
-				sba.Append("{ ");
-				if (remaining - sba.Length < 0)
-				{
-					sb.Append(Environment.NewLine);
-					sb.Append("    ");
-					remaining = width - 4;
 				}
 				else
 				{
-					remaining -= sba.Length;
-				}
-				sb.Append(sba);
-
-				sba.Clear();
-				for (int i = 1; i < 3; ++i)
-				{
-					sba.Append('<');
-					sba.Append(itemName + i.ToString());
-					sba.Append("> ");
-					if (remaining - sba.Length < 0)
+					var disp = obj as IDisposable;
+					if (disp != null)
 					{
-						sb.Append(Environment.NewLine);
-						sb.Append("    ");
-						remaining = width - 4;
+						disp.Dispose();
 					}
-					else
+				}
+			}
+		}
+		public void Destroy()
+		{
+			var obj = GetMemberValue();
+			if (IsArray || IsCollection)
+			{
+				var en = obj as System.Collections.IEnumerable;
+				if (en != null)
+				{
+					foreach (var item in en)
 					{
-						remaining -= sba.Length;
+						_DestroyItem(item);
 					}
-					sb.Append(sba);
-					sba.Clear();
 				}
-				sba.Append('<');
-				sba.Append(itemName + "(N)> ");
-				if (remaining - sba.Length < 0)
-				{
-					sb.Append(Environment.NewLine);
-					sb.Append("    ");
-					remaining = width - 4;
-				}
-				else
-				{
-					remaining -= sba.Length;
-				}
-				sb.Append(sba);
-				sba.Clear();
-			}
-			else if (type != typeof(bool))
-			{
-				sba.Append('<');
-				sba.Append(itemName);
-				sba.Append('>');
-				if (remaining - sba.Length < 0)
-				{
-					sb.Append(Environment.NewLine);
-					sb.Append("    ");
-					remaining = width - 4;
-				}
-				else
-				{
-					remaining -= sba.Length;
-				}
-				sb.Append(sba);
-				sba.Clear();
-			}
-
-			if (list)
-			{
-				sba.Append("} ");
-				if (remaining - sba.Length < 0)
-				{
-					sb.Append(Environment.NewLine);
-					sb.Append("    ");
-					remaining = width - 4;
-				}
-				else
-				{
-					remaining -= sba.Length;
-				}
-				sb.Append(sba);
-				sba.Clear();
 			}
 			else
 			{
-				sba.Append(' ');
+				_DestroyItem(obj);
 			}
-			if (!attr.Required)
+			var disp = obj as IDisposable;
+			if (disp != null)
 			{
-				sba.Append("] ");
-				if (remaining - sba.Length < 0)
-				{
-					sb.Append(Environment.NewLine);
-					sb.Append("    ");
-					remaining = width - 4;
-				}
-				else
-				{
-					remaining -= sba.Length;
-				}
-				sb.Append(sba);
-				sba.Clear();
+				disp.Dispose();
 			}
-		}
 
-		w.WriteLine(sb.ToString().Trim());
-		var printedName = false;
-		if (!string.IsNullOrWhiteSpace(Info.Name) && Info.Version != null)
-		{
-			w.WriteLine();
-			w.Write(Info.Name);
-			w.Write(" v");
-			w.WriteLine(Info.Version.ToString());
-			printedName = true;
 		}
-		if (!string.IsNullOrWhiteSpace(Info.Description))
+		public object InstantiateItem(string input)
 		{
-			w.WriteLine(WordWrap(Info.Description, width, 4));
-			w.WriteLine();
-		}
-		else if (printedName)
-		{
-			Console.WriteLine();
-		}
-		foreach (var m in mappings)
-		{
-			if (m.Key != "<default>")
+			if (string.IsNullOrWhiteSpace(input))
 			{
-				w.Write('/');
-				w.Write(m.Key);
-				w.Write(new string(' ', maxNameLen + 1 - m.Key.Length));
+				throw new FormatException("Bad data passed for argument");
 			}
-			else
+			if (Converter != null)
 			{
-				w.Write(m.Key);
-				w.Write(new string(' ', maxNameLen + 2 - m.Key.Length));
+				try
+				{
+					return Converter.ConvertFrom(input);
+				}
+				catch (Exception ex)
+				{
+					throw new ArgumentException(string.Format("Error parsing <{0}> - could not comprehend \"{1}\"", ItemName, input, ex));
+				}
 			}
-			var d = _GetCmdArgDesc(m.Value);
-			if (!string.IsNullOrWhiteSpace(d))
+			if (IsTextReader)
 			{
-				w.WriteLine(WordWrap(d, width, 4, maxNameLen + 2).Trim());
-			} else
-			{
-				w.WriteLine();
+				try
+				{
+					return new StreamReader(input);
+				}
+				catch (Exception ex)
+				{
+					throw new ArgumentException(string.Format("Error opening <{0}> \"{1}\"", ItemName, input,ex));
+				}
 			}
+			if (IsTextWriter)
+			{
+				return new _DeferredTextWriter(input);
+			}
+			if (Parse != null)
+			{
+				try
+				{
+					return Parse.Invoke(null, new object[] { input });
+				}
+				catch (Exception ex)
+				{
+					throw new ArgumentException(string.Format("Error parsing <{0}> - could not comprehend \"{1}\"", ItemName, input, ex));
+				}
+			}
+			throw new ArgumentException("Invalid input for argument <{0}>", ItemName);
 		}
-		w.Write("/?");
-		w.Write(new string(' ', maxNameLen));
-		w.WriteLine(WordWrap("Displays this screen and exits", width, 4, maxNameLen + 2).Trim());
-		w.WriteLine();
 	}
+	#endregion // _ArgInfo
+	private static readonly char[] _RestrictedChars = new char[] { ' ', '\r', '\t', '\n', '\n', '\b', '\"' };
+	#region IsStale
 	/// <summary>
 	/// Indicates whether outputfile doesn't exist or is old
 	/// </summary>
@@ -1192,7 +459,7 @@ partial class Program
 	{
 		var result = true;
 		var inputfile = GetFilename(input);
-		if(inputfile == null)
+		if (inputfile == null)
 		{
 			return result;
 		}
@@ -1219,10 +486,10 @@ partial class Program
 	public static bool IsStale(IEnumerable<TextReader> inputs, TextWriter output)
 	{
 		var result = true;
-		foreach(var input in inputs)
+		foreach (var input in inputs)
 		{
 			result = false;
-			if(IsStale(input,output))
+			if (IsStale(input, output))
 			{
 				result = true;
 				break;
@@ -1230,6 +497,8 @@ partial class Program
 		}
 		return result;
 	}
+	#endregion // IsStale
+	#region GetFilename
 	/// <summary>
 	/// Gets the filename for a <see cref="TextReader"/>if available
 	/// </summary>
@@ -1239,20 +508,20 @@ partial class Program
 	{
 		var sr = t as StreamReader;
 		string result = null;
-		if(sr!=null)
+		if (sr != null)
 		{
 			FileStream fstm = sr.BaseStream as FileStream;
-			if(fstm!=null)
+			if (fstm != null)
 			{
 				result = fstm.Name;
 			}
 		}
-        if (!string.IsNullOrEmpty(result))
-        {
+		if (!string.IsNullOrEmpty(result))
+		{
 			return result;
-        }
+		}
 		return null;
-    }
+	}
 	/// <summary>
 	/// Gets the filename for a <see cref="TextWriter"/>if available
 	/// </summary>
@@ -1260,8 +529,8 @@ partial class Program
 	/// <returns>The filename, if available, or null</returns>
 	public static string GetFilename(TextWriter t)
 	{
-		var dtw = t as _DemandTextWriter;
-		if(dtw!=null)
+		var dtw = t as _DeferredTextWriter;
+		if (dtw != null)
 		{
 			return dtw.Name;
 		}
@@ -1281,6 +550,384 @@ partial class Program
 		}
 		return null;
 	}
+	#endregion GetFilename
+	#region _ReflectArguments
+	private static IList<_ArgInfo> _ReflectArguments(Type type)
+	{
+		var mia = type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+		var result = new List<_ArgInfo>(mia.Length);
+		for (int i = 0; i < mia.Length; ++i)
+		{
+			var m = mia[i];
+			var prop = m as PropertyInfo;
+			var field = m as FieldInfo;
+			if (field == null && prop == null) { continue; }
+			var a = default(_ArgInfo);
+			a.IsProperty = prop != null;
+			var cmdArgAttr = m.GetCustomAttribute(typeof(CmdArgAttribute), true) as CmdArgAttribute;
+			if (cmdArgAttr == null)
+			{
+				continue;
+			}
+			a.Name = cmdArgAttr.Name;
+			a.Ordinal = cmdArgAttr.Ordinal;
+			a.Description = cmdArgAttr.Description;
+			a.Member = m;
+			a.ItemName = cmdArgAttr.ItemName;
+			a.IsOptional = cmdArgAttr.Required == false;
+			// fetch the name off the member and camel case it
+			if (string.IsNullOrWhiteSpace(a.Name))
+			{
+				switch (m.Name.Length)
+				{
+					case 0: // shouldn't happen
+						a.Name = null;
+						break;
+					case 1:
+					case 2:
+						a.Name = m.Name.ToLowerInvariant();
+						break;
+					default:
+						a.Name = m.Name.Substring(0, 2).ToLowerInvariant() + m.Name.Substring(2);
+						break;
+				}
+			}
+
+			a.Type = a.IsProperty ? prop.PropertyType : field.FieldType;
+			a.ElementType = a.Type;
+			a.ColClear = null;
+			a.ColAdd = null;
+			if (a.Type.IsArray)
+			{
+				a.IsArray = true;
+				a.ElementType = a.Type.GetElementType();
+			}
+			else
+			{
+				a.IsArray = false;
+				foreach (var it in a.Type.GetInterfaces())
+				{
+					if (!it.IsGenericType) continue;
+					var tdef = it.GetGenericTypeDefinition();
+					if (typeof(ICollection<>) == tdef)
+					{
+						a.ElementType = a.Type.GenericTypeArguments[0];
+						a.ColAdd = it.GetMethod("Add", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, new Type[] { a.ElementType }, null);
+						a.ColClear = it.GetMethod("Clear", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, Type.EmptyTypes, null);
+					}
+				}
+			}
+
+			if ((a.IsArray || a.IsCollection) && !a.HasArgument)
+			{
+				throw new InvalidProgramException(string.Format("bool arguments such as {0} cannot be arrays or collections because there's no way to indicate that", a.Member.Name));
+			}
+			else if (a.Ordinal > -1 && !a.HasArgument)
+			{
+				throw new InvalidProgramException(string.Format("bool arguments such as {0} cannot have ordinal positions because there's no way to indicate that", a.Member.Name));
+			}
+			if (!a.IsOptional && !a.HasArgument)
+			{
+				throw new InvalidProgramException(string.Format("bool arguments such as {0} cannot be required because that doesn't make sense", a.Member.Name));
+			}
+			a.InitialValue = a.IsProperty ? prop.GetValue(null) : field.GetValue(null);
+			// find the type converter
+			var tca = m.GetCustomAttribute(typeof(TypeConverterAttribute), true) as TypeConverterAttribute;
+			if (tca != null)
+			{
+				var tct = Type.GetType(tca.ConverterTypeName);
+				if (tct != null)
+				{
+					a.Converter = Activator.CreateInstance(tct) as TypeConverter;
+					if (a.Converter != null && !a.Converter.CanConvertFrom(typeof(string)))
+					{
+						a.Converter = null;
+					}
+				}
+			}
+			if (a.Converter == null && !a.IsArray && !a.IsCollection)
+			{
+				if (a.InitialValue != null)
+				{
+					a.Converter = TypeDescriptor.GetConverter(a.InitialValue);
+					if (a.Converter != null && !a.Converter.CanConvertFrom(typeof(string)))
+					{
+						a.Converter = null;
+					}
+				}
+			}
+			if (a.Type == typeof(bool) && ((bool)a.InitialValue))
+			{
+				throw new InvalidProgramException(string.Format("bool arguments such as {0} cannot default to true because that doesn't make sense.", a.Member.Name));
+			}
+			if (a.Converter == null)
+			{
+				a.Converter = TypeDescriptor.GetConverter(a.ElementType);
+				if (a.Converter != null && !a.Converter.CanConvertFrom(typeof(string)))
+				{
+					a.Converter = null;
+				}
+			}
+			// get a parse method if we must
+			if (a.Converter == null)
+			{
+				var bt = a.ElementType;
+				while (a.Parse == null && bt != null)
+				{
+					try
+					{
+						a.Parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public);
+					}
+					catch (AmbiguousMatchException)
+					{
+						a.Parse = bt.GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(string) }, null);
+					}
+					bt = bt.BaseType;
+				}
+			}
+			// on the off chance this is both, favor TextReader over TextWriter
+			a.IsTextReader = a.ElementType == typeof(TextReader);
+			if (!a.IsTextReader)
+			{
+				a.IsTextWriter = a.ElementType == typeof(TextWriter);
+			}
+			else
+			{
+				a.IsTextWriter = false;
+			}
+			if (string.IsNullOrWhiteSpace(cmdArgAttr.ItemName))
+			{
+				if (a.IsTextReader)
+				{
+					a.ItemName = "infile";
+				}
+				else if (a.IsTextWriter)
+				{
+					a.ItemName = "outfile";
+				}
+				else
+				if (!a.IsArray && !a.IsCollection)
+				{
+
+					a.ItemName = a.Name;
+				}
+				else
+				{
+					a.ItemName = a.Name + "Item";
+				}
+			}
+			for (int j = 0; j < result.Count; ++j)
+			{
+				var cmp = result[j];
+				if (a.Ordinal > -1 && cmp.Ordinal == a.Ordinal)
+				{
+					throw new InvalidProgramException(string.Format("Duplicate ordinal specified: {0}", a.Ordinal));
+				}
+				// never null but we like to check
+				if (0 > cmp.Ordinal && 0 > a.Ordinal && a.Name != null && cmp.Name == a.Name)
+				{
+					throw new InvalidProgramException(string.Format("Duplicate argument name \"{0}\"", a.Name));
+				}
+			}
+			result.Add(a);
+		}
+		result.Sort((lhs, rhs) => {
+			if (-1 < lhs.Ordinal)
+			{
+				return (rhs.Ordinal > -1) ? -1 : 0;
+			}
+			if (-1 < rhs.Ordinal) return 1;
+			int cmp = rhs.Ordinal - lhs.Ordinal;
+			if (cmp == 0)
+				return string.Compare(lhs.Name, rhs.Name);
+			return cmp;
+		});
+		for (int i = 0; i < result.Count - 1; ++i)
+		{
+			var info = result[i];
+			if (info.Name.Contains("/") || info.Name.IndexOfAny(_RestrictedChars) > -1)
+			{
+				throw new InvalidProgramException(string.Format("The argument name for {0} is invalid.", info.Member.Name));
+			}
+			if (info.Ordinal > -1)
+			{
+				if (info.IsArray || info.IsCollection)
+				{
+					if (result[i + 1].Ordinal > -1)
+					{
+						throw new InvalidProgramException(string.Format("In order for an ordinal argument such as {0} to be an array or collection it must be the last ordinal argument in the list.", info.Member.Name));
+					}
+				}
+				else if (info.IsOptional)
+				{
+					if (result[i + 1].Ordinal > -1)
+					{
+						throw new InvalidProgramException(string.Format("In order for an ordinal argument such as {0} to be optional it must be the last ordinal argument in the list.", info.Member.Name));
+					}
+				}
+			}
+			else
+			{
+				break;
+			}
+		}
+
+		return result;
+	}
+	#endregion // _ReflectArguments
+	#region _IndexOfArgInfo
+	static int _IndexOfArgInfo(IList<_ArgInfo> infos, string arg)
+	{
+		if (string.IsNullOrEmpty(arg) || arg[0] != '/') { return -1; }
+		arg = arg.Substring(1);
+		if (string.IsNullOrWhiteSpace(arg)) { return -1; }
+		for (int i = 0; i < infos.Count; ++i)
+		{
+			var info = infos[i];
+			if (info.Name == arg)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+	#endregion // _IndexOfArgInfo
+	#region _ParseArguments
+	static void _ParseArguments(string[] args, IList<_ArgInfo> infos)
+	{
+		// parse the ordinal arguments
+		int argi = 0;
+		int infosi = 0;
+		var reqCount = 0;
+		for (; reqCount < infos.Count; ++reqCount)
+		{
+			var info = infos[reqCount];
+			if (info.Ordinal < 0 || info.IsOptional)
+				break;
+		}
+		while (argi < args.Length && infosi < infos.Count)
+		{
+			var info = infos[infosi];
+			if (info.Ordinal < 0)
+			{
+				break;
+			}
+			if (info.IsArray || info.IsCollection)
+			{
+				var arg = args[argi];
+				// we can assume this is the last ordinal item in the list
+				if (arg.StartsWith("/"))
+				{
+					// expect at least one item
+					if (!info.IsOptional)
+					{
+						throw new ArgumentException(string.Format("Missing required argument <{0}>", info.ItemName));
+					}
+				}
+				else
+				{
+					info.BeginList();
+					info.AddToList(arg);
+					++argi;
+					while (argi < args.Length && args[argi][0] != '/')
+					{
+						var sarg = args[argi];
+						info.AddToList(sarg);
+						++argi;
+					}
+				}
+				++infosi;
+			}
+			else if (info.IsOptional)
+			{
+				var arg = args[argi];
+				// we can assume this is the last ordinal item in the list
+				if (!arg.StartsWith("/"))
+				{
+					info.SetMemberValue(info.InstantiateItem(arg));
+					++argi;
+					++infosi;
+				}
+			}
+			else
+			{
+				// required
+				var arg = args[argi];
+				if (arg.StartsWith("/"))
+				{
+					throw new ArgumentException(string.Format("Missing required argument <{0}>", info.ItemName));
+				}
+				info.SetMemberValue(info.InstantiateItem(arg));
+				++argi;
+				++infosi;
+			}
+		}
+		if (argi < reqCount)
+		{
+			throw new ArgumentException(string.Format("Missing required argument <{0}>", infos[argi].ItemName));
+		}
+		HashSet<string> seen = new HashSet<string>(args.Length);
+		while (argi < args.Length)
+		{
+			var arg = args[argi];
+			if (!arg.StartsWith("/"))
+			{
+				throw new ArgumentException("Unexpected value while looking for a / switch");
+			}
+			var infoIdx = _IndexOfArgInfo(infos, arg);
+			if (infoIdx < 0)
+			{
+				throw new ArgumentException(string.Format("Unrecognized switch: {0}", arg));
+			}
+			if (!seen.Add(arg))
+			{
+				throw new ArgumentException(string.Format("Duplicate switch: {0}", arg));
+			}
+			var info = infos[infoIdx];
+			++argi;
+			arg = argi < args.Length ? args[argi] : null;
+			if (info.HasArgument)
+			{
+				if (info.IsArray || info.IsCollection)
+				{
+					if (arg.StartsWith("/"))
+					{
+						throw new ArgumentException(string.Format("Expected <{0}> before {1}", info.ItemName, arg));
+					}
+					info.BeginList();
+					info.AddToList(arg);
+					++argi;
+					while (argi < args.Length && !args[argi].StartsWith("/"))
+					{
+						arg = args[argi];
+						info.AddToList(arg);
+						++argi;
+
+					}
+				}
+				else
+				{
+					info.SetMemberValue(info.InstantiateItem(arg));
+					++argi;
+				}
+			}
+			else
+			{
+				// is a bool switch, the only type without an explicit argument
+				info.SetMemberValue(true);
+			}
+		}
+		for (int i = 0; i < infos.Count; ++i)
+		{
+			var info = infos[i];
+			if (info.Ordinal < 0 && !info.IsOptional && !seen.Contains("/" + info.Name))
+			{
+				throw new ArgumentException("The <{0}> is required but was not specified.", info.ItemName);
+			}
+		}
+	}
+	#endregion // _ParseArguments
+	#region WordWrap
 	/// <summary>
 	/// Performs word wrapping
 	/// </summary>
@@ -1297,7 +944,7 @@ partial class Program
 		}
 		if (indent < 0) throw new ArgumentOutOfRangeException(nameof(indent));
 		if (width < 0) throw new ArgumentOutOfRangeException(nameof(width));
-		if (width>0 && width<indent)
+		if (width > 0 && width < indent)
 		{
 			throw new ArgumentOutOfRangeException(nameof(width));
 		}
@@ -1306,7 +953,7 @@ partial class Program
 
 		StringBuilder result = new StringBuilder();
 		double actualWidth = startOffset;
-		for(int i = 0;i<words.Length;i++)
+		for (int i = 0; i < words.Length; i++)
 		{
 			var word = words[i];
 			if (i > 0)
@@ -1331,60 +978,240 @@ partial class Program
 		}
 		return result.ToString();
 	}
-	public static int Main(string[] args)
+
+	#endregion // WordWrap
+	private static void _PrintUsage(TextWriter w, IList<_ArgInfo> arguments)
 	{
-		if (args.Length == 1 && args[0] == "/?")
+		var sb = new StringBuilder();
+		if (!string.IsNullOrWhiteSpace(Info.Name) && null != Info.Version)
 		{
-			PrintUsage();
-			return 0;
+
+			sb.AppendFormat("{0} v{1}.{2}", Info.Name, Info.Version.Major, Info.Version.Minor);
+			if (Info.Version.Build != 0 || Info.Version.Revision != 0)
+			{
+				sb.AppendFormat(" (build {0} rev. {1})", Info.Version.Build, Info.Version.Revision);
+			}
+			if (!string.IsNullOrWhiteSpace(Info.Copyright))
+			{
+				sb.Append(" ");
+				sb.Append(Info.Copyright.Trim());
+			}
+			sb.AppendLine();
+			if (!string.IsNullOrWhiteSpace(Info.Description))
+			{
+				sb.AppendLine();
+				sb.Append("   ");
+				sb.Append(Info.Description.Trim());
+				sb.AppendLine();
+			}
 		}
-		Dictionary<string, MemberInfo> mappings = _CmdArgsReflect();
+		w.WriteLine(WordWrap(sb.ToString()));
+		sb.Clear();
+		sb.Append("Usage: ");
+		sb.Append(Path.GetFileNameWithoutExtension(Info.Filename));
+		sb.Append(" ");
+		int nameLen = 0;
+		for (int i = 0; i < arguments.Count; ++i)
+		{
+			if (i > 0)
+			{
+				sb.Append(' ');
+			}
+			var info = arguments[i];
+			if (info.ItemName.Length > nameLen)
+			{
+				nameLen = info.ItemName.Length;
+			}
+			if (info.Ordinal < 0)
+			{
+				if (info.IsOptional)
+				{
+					sb.Append("[");
+				}
+				sb.Append("/");
+				sb.Append(info.Name);
+			}
+			else
+			{
+				if (info.IsOptional)
+				{
+					sb.Append("[");
+				}
+			}
+			if (info.HasArgument)
+			{
+				if (info.Ordinal < 0)
+				{
+					sb.Append(" ");
+				}
+				if (info.IsCollection || info.IsArray)
+				{
+					sb.Append("{<");
+					sb.Append(info.ItemName);
+					sb.Append("1>");
+					if (info.IsOptional)
+					{
+						// the whole thing is already surrounded by brackes so we don't need any
+						sb.Append("..<");
+						sb.Append(info.ItemName);
+						sb.Append("N>");
+					}
+					else
+					{
+						sb.Append("..[<");
+						sb.Append(info.ItemName);
+						sb.Append("N>]");
+					}
+					sb.Append("}");
+				}
+				else
+				{
+					sb.Append("<");
+					sb.Append(info.ItemName);
+					sb.Append(">");
+				}
+			}
+			if (info.IsOptional)
+			{
+				sb.Append("]");
+			}
+		}
+		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
+		w.WriteLine();
+		sb.Clear();
+		for (int i = 0; i < arguments.Count; ++i)
+		{
+			sb.Clear();
+			var info = arguments[i];
+			sb.Append("  <");
+			sb.Append(info.ItemName);
+			sb.Append(">");
+			sb.Append(new string(' ', (nameLen - info.ItemName.Length) + 1));
+			if (!string.IsNullOrEmpty(info.Description))
+			{
+				sb.Append(info.Description.Trim());
+			}
+			else if (info.IsTextReader)
+			{
+				sb.Append("The input file");
+				if (info.IsArray || info.IsCollection)
+				{
+					sb.Append("s");
+				}
+			}
+			else if (info.IsTextWriter)
+			{
+				sb.Append("The output file");
+				if (info.IsArray || info.IsCollection)
+				{
+					sb.Append("s");
+				}
+			}
+			w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
+		}
+		sb.Clear();
+		if (nameLen == 0)
+		{
+			sb.Append("  /? ");
+			sb.AppendLine("Displays this screen and exits");
+		}
+		else
+		{
+			sb.Append("- or -");
+			sb.AppendLine();
+			sb.Append("  /?");
+			sb.Append(new string(' ', (nameLen - 2) + 1 + 2));
+			sb.AppendLine("Displays this screen and exits");
+		}
+		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
+	}
+	const string _ProgressTwirl = "-\\|/";
+	const char _ProgressBlock = '■';
+	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";
+	const string _ProgressBackOne = "\b";
+	static readonly StringBuilder _ProgressBuffer = new StringBuilder();
+	/// <summary>
+	/// Writes an indeterminate progress indicator to the screen
+	/// </summary>
+	/// <param name="progress">The integer progress indicator. Just keep incrementing this value.</param>
+	/// <param name="update">False if this is the initial call, otherwise true</param>
+	/// <param name="output">The <see cref="TextWriter"/> to write to</param>
+	internal static void WriteProgress(int progress, bool update, TextWriter output)
+	{
+		_ProgressBuffer.Clear();
+		if (update)
+			_ProgressBuffer.Append(_ProgressBackOne);
+		_ProgressBuffer.Append(_ProgressTwirl[progress % _ProgressTwirl.Length]);
+		output.Write(_ProgressBuffer.ToString());
+	}
+	/// <summary>
+	/// Writes a progress bar indicator to the screen
+	/// </summary>
+	/// <param name="progress">The integer progress indicator. Should be 0 to 100</param>
+	/// <param name="update">False if this is the initial call, otherwise true</param>
+	/// <param name="output">The <see cref="TextWriter"/> to write to</param>
+	internal static void WriteProgressBar(int percent, bool update, TextWriter output)
+	{
+		_ProgressBuffer.Clear();
+		if (update)
+			_ProgressBuffer.Append(_ProgressBack);
+		_ProgressBuffer.Append("[");
+		var p = (int)((percent / 10f) + .5f);
+		for (var i = 0; i < 10; ++i)
+		{
+			if (i >= p)
+				_ProgressBuffer.Append(' ');
+			else
+				_ProgressBuffer.Append(_ProgressBlock);
+		}
+		_ProgressBuffer.Append(string.Format("] {0,3:##0}%", percent));
+		output.Write(_ProgressBuffer.ToString());
+	}
+	static int Main(string[] args)
+	{
 #if !DEBUG
 		var parsedArgs = false;
-#endif
+#endif // !DEBUG
+		IList<_ArgInfo> argInfos = null;
 		try
 		{
-			_CmdArgsCrack(args, mappings);
+			argInfos = _ReflectArguments(typeof(Program));
+			if (args.Length == 1 && args[0] == "/?")
+			{
+				_PrintUsage(Console.Out, argInfos);
+				return 0;
+			}
+			_ParseArguments(args, argInfos);
 #if !DEBUG
 			parsedArgs = true;
 #endif
 			Run();
 		}
 #if !DEBUG
-
-			catch(Exception ex) {
-				if(!parsedArgs) 
+		catch (Exception ex)
+		{
+			if (!parsedArgs)
+			{
+				if (argInfos != null)
 				{
-				   PrintUsage();
+					_PrintUsage(Console.Error, argInfos);
 				}
-				return _ReportError(ex);
 			}
+			Console.Error.WriteLine("Error: {0}", ex.Message);
+			return ex.HResult;
+		}
 #endif
 		finally
 		{
-			foreach(var m in mappings.Values)
+			if (argInfos != null)
 			{
-				var vals = _CmdArgGetValues(m);
-				if (vals != null)
+				for (int i = 0; i < argInfos.Count; ++i)
 				{
-					foreach (var v in vals)
-					{
-						var disp = v as IDisposable;
-						if (disp != null && !object.ReferenceEquals(v, Console.In) && !object.ReferenceEquals(v, Console.Out) && !object.ReferenceEquals(v, Console.Error))
-						{
-							disp.Dispose();
-						}
-					}
+					argInfos[i].Destroy();
 				}
 			}
 		}
 		return 0;
 	}
-#if !DEBUG
-	private static int _ReportError(Exception ex)
-	{
-		Console.Error.WriteLine("Error: "+ex.Message);
-		return ex.HResult;
-	}
-#endif
 }
+

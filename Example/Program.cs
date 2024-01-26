@@ -6,21 +6,21 @@ using System.Reflection;
 */
 static partial class Program
 {
-	[CmdArg("<default>", true, "The input files", ElementName = "infile")]
+	[CmdArg("<default>", Required =true,Description ="The input files", ItemName = "infile")]
 	public static TextReader[] Inputs = null;// new TextReader[] { Console.In };
-	[CmdArg("output", false, "The output file. Defaults to <stdout>", ElementName = "outfile")]
+	[CmdArg("output",Description = "The output file. Defaults to <stdout>", ItemName = "outfile")]
 	public static TextWriter Output = Console.Out;
-	[CmdArg("id", false, "The guid id", ElementName = "guid")]
+	[CmdArg("id", Description = "The guid id", ItemName = "guid")]
 	public static Guid Id = Guid.Empty;
-	[CmdArg("ips", false, "The ip addesses", ElementName = "address")]
+	[CmdArg("ips", Description = "The ip addesses", ItemName = "address")]
 	public static List<IPAddress> Ips = new List<IPAddress>() { IPAddress.Any };
-	[CmdArg("ifstale", false, "Only regenerate if input has changed")]
+	[CmdArg("ifstale", Description = "Only regenerate if input has changed")]
 	public static bool IfStale = false;
-	[CmdArg("width", false, "The width to wrap to", ElementName = "chars")]
+	[CmdArg("width", Description = "The width to wrap to", ItemName = "chars")]
 	public static int Width = Console.WindowWidth/2;
-	[CmdArg("enum", false, "The binding flags", ElementName = "flag")]
+	[CmdArg("enum", Description = "The binding flags", ItemName = "flag")]
 	public static List<BindingFlags> Enum = null;
-	[CmdArg("indices", false, "The indices", ElementName = "index")]
+	[CmdArg("indices", Description = "The indices", ItemName = "index")]
 	public static List<int> Indices = null;
 	static void Run()
 	{
