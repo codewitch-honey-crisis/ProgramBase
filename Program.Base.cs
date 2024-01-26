@@ -1046,6 +1046,14 @@ partial class Program
 	}
 
 	#endregion // WordWrap
+	#region PrintUsage
+	/// <summary>
+	/// Prints the usage screen
+	/// </summary>
+	public static void PrintUsage()
+	{
+		_PrintUsage(Console.Error, _ReflectArguments(typeof(Program))) ;
+	}
 	private static void _PrintUsage(TextWriter w, IList<_ArgInfo> arguments)
 	{
 		var sb = new StringBuilder();
@@ -1118,13 +1126,13 @@ partial class Program
 					if (info.IsOptional)
 					{
 						// the whole thing is already surrounded by brackes so we don't need any
-						sb.Append("..<");
+						sb.Append(" <");
 						sb.Append(info.ItemName);
 						sb.Append("N>");
 					}
 					else
 					{
-						sb.Append("..[<");
+						sb.Append(" [<");
 						sb.Append(info.ItemName);
 						sb.Append("N>]");
 					}
@@ -1191,6 +1199,8 @@ partial class Program
 		}
 		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 	}
+	#endregion // PrintUsage
+
 	const string _ProgressTwirl = "-\\|/";
 	const char _ProgressBlock = '■';
 	const string _ProgressBack = "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b";

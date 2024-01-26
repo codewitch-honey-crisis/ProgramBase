@@ -10,7 +10,7 @@ static partial class Program
 	public static TextReader[] Inputs = null;
 	[CmdArg("output",Description = "The output file. Defaults to <stdout>")]
 	public static TextWriter Output = Console.Out;
-	[CmdArg("id", Required =true, Description = "The guid id", ItemName = "guid")]
+	[CmdArg("id", Description = "The guid id", ItemName = "guid")]
 	public static Guid Id = Guid.Empty;
 	[CmdArg("ips", Description = "The ip addesses", ItemName = "address")]
 	public static List<IPAddress> Ips = new List<IPAddress>() { IPAddress.Any };
