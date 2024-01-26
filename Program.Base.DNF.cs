@@ -1304,7 +1304,7 @@ partial class Program
 				}
 			}
 		}
-		return 0;
+		return _GetUserExitCode();
 	}
 }
 
