@@ -94,7 +94,7 @@ internal partial class Program
 	}
 }
 ```
-This application presents the following using screen:
+This application presents the following using screen (on Windows):
 ```
 wrap v1.0
 
@@ -109,5 +109,20 @@ Usage: wrap [{<infile1> <infileN>}] [/ifstale] [/output <outfile>] [/width <colu
 - or -
   /?        Displays this screen and exits
 ```
+and like this on other operating systems
+```
+wrap v1.0
 
+   word wraps input
+
+Usage: wrap [{<infile1> <infileN>}] [--ifstale] [--output <outfile>] [--width <columns>]
+
+  <infile>  The input text file to wrap. Defaults to <stdin>
+  <ifstale> Skip if the input file is older than the output file
+  <outfile> The ouput text file to create. Defaults to <stdout>
+  <columns> The width to wrap. Defaults based on console window size
+- or -
+  --help    Displays this screen and exits
+
+  ```
 That's all built for you from the above. Note the automatic file management.
