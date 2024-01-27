@@ -16,7 +16,6 @@ internal partial class Program
 	static bool IfStale = false;
 	static void Run()
 	{
-		
 		if (!IfStale || IsStale(Inputs, Output))
 		{
 			foreach (var input in Inputs)
@@ -27,7 +26,6 @@ internal partial class Program
 				{
 					Output.WriteLine(WordWrap(line, Width));
 				}
-				
 			}
 		} else
 		{

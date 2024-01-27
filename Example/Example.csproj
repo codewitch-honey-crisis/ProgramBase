@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
     <Authors>honey the codewitch</Authors>
     <Company>honey the codewitch</Company>
     <Description>An example of using Program.Base to handle core CLI functionality</Description>

@@ -72,8 +72,13 @@ internal struct ProgramInfo
 	/// The version of the assembly used for the using screen
 	/// </summary>
 	public readonly Version Version;
-	public static readonly ProgramInfo This = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion());
-	private ProgramInfo(string codeBase, string filename, string name, string description, string copyright, Version version)
+	/// <summary>
+	/// The command line prefix that started this application.
+	/// </summary>
+	/// <remarks>For hosted applications this may be different than the filename.</remarks>
+	public readonly string CommandLinePrefix;
+
+	public ProgramInfo(string codeBase, string filename, string name, string description, string copyright, Version version, string commandLinePrefix)
 	{
 		CodeBase = codeBase;
 		Filename = filename;
@@ -81,7 +86,14 @@ internal struct ProgramInfo
 		Description = description;
 		Copyright = copyright;
 		Version = version;
+		CommandLinePrefix = commandLinePrefix;
 	}
+}
+#endregion // ProgramInfo
+partial class Program
+{
+	internal static ProgramInfo Info;
+	#region Basic Program Info
 	static string _GetCodeBase()
 	{
 		try
@@ -166,15 +178,7 @@ internal struct ProgramInfo
 		catch { }
 		return null;
 	}
-}
-#endregion // ProgramInfo
-partial class Program
-{
-	internal static ProgramInfo Info {
-		get {
-			return ProgramInfo.This;
-		}
-	}
+	#endregion // Basic Program Info
 	#region _DeferredTextWriter
 	private sealed class _DeferredTextWriter : TextWriter
 	{
@@ -1157,7 +1161,12 @@ partial class Program
 	/// </summary>
 	public static void PrintUsage()
 	{
-		_PrintUsage(Console.Error, "/", _ReflectArguments(typeof(Program)));
+		var prefix = "--";
+		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+		{
+			prefix = "/";
+		}
+		_PrintUsage(Console.Error, prefix, _ReflectArguments(typeof(Program)));
 	}
 	private static void _PrintUsage(TextWriter w, string prefix, IList<_ArgInfo> arguments)
 	{
@@ -1366,6 +1375,27 @@ partial class Program
 		var cl = Environment.CommandLine;
 		string exename;
 		var clargs = CrackCommandLine(cl, out exename);
+		var sb = new StringBuilder();
+		sb.Append(exename);
+		if (clargs.Count > args.Length)
+		{
+			for (int i = 0; i < clargs.Count - args.Length; ++i)
+			{
+				sb.Append(" ");
+				var clarg = clargs[i];
+				if (clarg.Key)
+				{
+					sb.Append("\"");
+					sb.Append(clarg.Value.Replace("\"", "\"\""));
+					sb.Append("\"");
+				}
+				else
+				{
+					sb.Append(clarg.Value);
+				}
+			}
+		}
+		Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion(), sb.ToString());
 		if (clargs.Count >= args.Length)
 		{
 			clargs = clargs.GetRange(clargs.Count - args.Length, args.Length);
@@ -1378,6 +1408,7 @@ partial class Program
 				clargs.Add(new KeyValuePair<bool, string>(false, args[i]));
 			}
 		}
+
 #if !DEBUG
 		var parsedArgs = false;
 #endif // !DEBUG
