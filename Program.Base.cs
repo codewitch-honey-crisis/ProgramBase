@@ -1385,7 +1385,7 @@ partial class Program
 		try
 		{
 			argInfos = _ReflectArguments(typeof(Program));
-			if (args.Length == 1 && args[0] == prefix+"help" || args[0]==prefix+"?")
+			if (args.Length == 1 && (args[0] == prefix+"help" || args[0]==prefix+"?"))
 			{
 				_PrintUsage(Console.Out, prefix,argInfos);
 				return 0;

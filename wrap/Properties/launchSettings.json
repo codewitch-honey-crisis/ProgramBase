@@ -6,7 +6,10 @@
     },
     "wrap usage": {
       "commandName": "Project",
-      "commandLineArgs": "--help"
+      "commandLineArgs": "/help"
+    },
+    "wrap none": {
+      "commandName": "Project"
     }
   }
 }
