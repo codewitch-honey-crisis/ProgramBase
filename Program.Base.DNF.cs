@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using System.Net;
 using System.Reflection;
 using System.Text;
 #region CmdArgAttribute
@@ -858,10 +857,10 @@ partial class Program
 	}
 	#endregion // _ReflectArguments
 	#region _IndexOfArgInfo
-	static int _IndexOfArgInfo(IList<_ArgInfo> infos, string arg)
+	static int _IndexOfArgInfo(IList<_ArgInfo> infos, string prefix, string arg)
 	{
-		if (string.IsNullOrEmpty(arg) || arg[0] != '/') { return -1; }
-		arg = arg.Substring(1);
+		if (string.IsNullOrEmpty(arg) || !arg.StartsWith(prefix)) { return -1; }
+		arg = arg.Substring(prefix.Length);
 		if (string.IsNullOrWhiteSpace(arg)) { return -1; }
 		for (int i = 0; i < infos.Count; ++i)
 		{
@@ -875,7 +874,7 @@ partial class Program
 	}
 	#endregion // _IndexOfArgInfo
 	#region _ParseArguments
-	static void _ParseArguments(string[] args, IList<_ArgInfo> infos)
+	static void _ParseArguments(string[] args, string prefix, IList<_ArgInfo> infos)
 	{
 		// parse the ordinal arguments
 		int argi = 0;
@@ -898,7 +897,7 @@ partial class Program
 			{
 				var arg = args[argi];
 				// we can assume this is the last ordinal item in the list
-				if (arg.StartsWith("/"))
+				if (arg.StartsWith(prefix))
 				{
 					// expect at least one item
 					if (!info.IsOptional)
@@ -911,7 +910,7 @@ partial class Program
 					info.BeginList();
 					info.AddToList(arg);
 					++argi;
-					while (argi < args.Length && args[argi][0] != '/')
+					while (argi < args.Length && !args[argi].StartsWith(prefix))
 					{
 						var sarg = args[argi];
 						info.AddToList(sarg);
@@ -924,7 +923,7 @@ partial class Program
 			{
 				var arg = args[argi];
 				// we can assume this is the last ordinal item in the list
-				if (!arg.StartsWith("/"))
+				if (!arg.StartsWith(prefix))
 				{
 					info.SetMemberValue(info.InstantiateItem(arg));
 					++argi;
@@ -935,7 +934,7 @@ partial class Program
 			{
 				// required
 				var arg = args[argi];
-				if (arg.StartsWith("/"))
+				if (arg.StartsWith(prefix))
 				{
 					throw new ArgumentException(string.Format("Missing required argument <{0}>", info.ItemName));
 				}
@@ -952,11 +951,11 @@ partial class Program
 		while (argi < args.Length)
 		{
 			var arg = args[argi];
-			if (!arg.StartsWith("/"))
+			if (!arg.StartsWith(prefix))
 			{
-				throw new ArgumentException("Unexpected value while looking for a / switch");
+				throw new ArgumentException(string.Format("Unexpected value while looking for a {0} switch", prefix));
 			}
-			var infoIdx = _IndexOfArgInfo(infos, arg);
+			var infoIdx = _IndexOfArgInfo(infos, prefix, arg);
 			if (infoIdx < 0)
 			{
 				throw new ArgumentException(string.Format("Unrecognized switch: {0}", arg));
@@ -972,14 +971,14 @@ partial class Program
 			{
 				if (info.IsArray || info.IsCollection)
 				{
-					if (arg.StartsWith("/"))
+					if (arg.StartsWith(prefix))
 					{
 						throw new ArgumentException(string.Format("Expected <{0}> before {1}", info.ItemName, arg));
 					}
 					info.BeginList();
 					info.AddToList(arg);
 					++argi;
-					while (argi < args.Length && !args[argi].StartsWith("/"))
+					while (argi < args.Length && !args[argi].StartsWith(prefix))
 					{
 						arg = args[argi];
 						info.AddToList(arg);
@@ -1002,7 +1001,7 @@ partial class Program
 		for (int i = 0; i < infos.Count; ++i)
 		{
 			var info = infos[i];
-			if (info.Ordinal < 0 && !info.IsOptional && !seen.Contains("/" + info.Name))
+			if (info.Ordinal < 0 && !info.IsOptional && !seen.Contains(prefix + info.Name))
 			{
 				throw new ArgumentException("The <{0}> is required but was not specified.", info.ItemName);
 			}
@@ -1157,9 +1156,9 @@ partial class Program
 	/// </summary>
 	public static void PrintUsage()
 	{
-		_PrintUsage(Console.Error, _ReflectArguments(typeof(Program)));
+		_PrintUsage(Console.Error, "/", _ReflectArguments(typeof(Program)));
 	}
-	private static void _PrintUsage(TextWriter w, IList<_ArgInfo> arguments)
+	private static void _PrintUsage(TextWriter w, string prefix, IList<_ArgInfo> arguments)
 	{
 		var sb = new StringBuilder();
 		if (!string.IsNullOrWhiteSpace(Info.Name) && null != Info.Version)
@@ -1189,7 +1188,7 @@ partial class Program
 		sb.Append("Usage: ");
 		sb.Append(Path.GetFileNameWithoutExtension(Info.Filename));
 		sb.Append(" ");
-		int nameLen = 0;
+		int nameLen = 4;
 		for (int i = 0; i < arguments.Count; ++i)
 		{
 			if (i > 0)
@@ -1207,7 +1206,7 @@ partial class Program
 				{
 					sb.Append("[");
 				}
-				sb.Append("/");
+				sb.Append(prefix);
 				sb.Append(info.Name);
 			}
 			else
@@ -1289,18 +1288,25 @@ partial class Program
 			w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 		}
 		sb.Clear();
-		if (nameLen == 0)
+		if (0 > _IndexOfArgInfo(arguments, prefix, prefix + "help"))
 		{
-			sb.Append("  /? ");
-			sb.AppendLine("Displays this screen and exits");
-		}
-		else
-		{
-			sb.Append("- or -");
-			sb.AppendLine();
-			sb.Append("  /?");
-			sb.Append(new string(' ', (nameLen - 2) + 1 + 2));
-			sb.AppendLine("Displays this screen and exits");
+			if (nameLen == 0)
+			{
+				sb.Append("  ");
+				sb.Append(prefix);
+				sb.Append("help");
+				sb.Append(new string(' ', (nameLen - 4) + 1));
+				sb.AppendLine("Displays this screen and exits");
+			}
+			else
+			{
+				sb.AppendLine("- or -");
+				sb.Append("  ");
+				sb.Append(prefix);
+				sb.Append("help");
+				sb.Append(new string(' ', (nameLen - 4) + 1));
+				sb.AppendLine("Displays this screen and exits");
+			}
 		}
 		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 	}
@@ -1351,6 +1357,11 @@ partial class Program
 	#endregion // WriteProgress/WriteProgressBar
 	static int Main(string[] args)
 	{
+		var prefix = "--";
+		if (Environment.OSVersion.Platform==PlatformID.Win32NT)
+		{
+			prefix = "/";
+		}
 #if !DEBUG
 		var parsedArgs = false;
 #endif // !DEBUG
@@ -1358,12 +1369,12 @@ partial class Program
 		try
 		{
 			argInfos = _ReflectArguments(typeof(Program));
-			if (args.Length == 1 && args[0] == "/?")
+			if (args.Length == 1 && args[0] == prefix + "help" || args[0] == prefix + "?")
 			{
-				_PrintUsage(Console.Out, argInfos);
+				_PrintUsage(Console.Out, prefix, argInfos);
 				return 0;
 			}
-			_ParseArguments(args, argInfos);
+			_ParseArguments(args, prefix, argInfos);
 #if !DEBUG
 			parsedArgs = true;
 #endif
@@ -1376,7 +1387,7 @@ partial class Program
 			{
 				if (argInfos != null)
 				{
-					_PrintUsage(Console.Error, argInfos);
+					_PrintUsage(Console.Error, prefix, argInfos);
 				}
 			}
 			Console.Error.WriteLine("Error: {0}", ex.Message);
