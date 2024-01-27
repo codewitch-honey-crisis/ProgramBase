@@ -874,7 +874,7 @@ partial class Program
 	}
 	#endregion // _IndexOfArgInfo
 	#region _ParseArguments
-	static void _ParseArguments(string[] args, string prefix, IList<_ArgInfo> infos)
+	static void _ParseArguments(IList<KeyValuePair<bool, string>> args, string prefix, IList<_ArgInfo> infos)
 	{
 		// parse the ordinal arguments
 		int argi = 0;
@@ -886,7 +886,7 @@ partial class Program
 			if (info.Ordinal < 0 || info.IsOptional)
 				break;
 		}
-		while (argi < args.Length && infosi < infos.Count)
+		while (argi < args.Count && infosi < infos.Count)
 		{
 			var info = infos[infosi];
 			if (info.Ordinal < 0)
@@ -897,7 +897,7 @@ partial class Program
 			{
 				var arg = args[argi];
 				// we can assume this is the last ordinal item in the list
-				if (arg.StartsWith(prefix))
+				if (!arg.Key && arg.Value.StartsWith(prefix))
 				{
 					// expect at least one item
 					if (!info.IsOptional)
@@ -908,12 +908,12 @@ partial class Program
 				else
 				{
 					info.BeginList();
-					info.AddToList(arg);
+					info.AddToList(arg.Value);
 					++argi;
-					while (argi < args.Length && !args[argi].StartsWith(prefix))
+					while (argi < args.Count && (args[argi].Key || !args[argi].Value.StartsWith(prefix)))
 					{
 						var sarg = args[argi];
-						info.AddToList(sarg);
+						info.AddToList(sarg.Value);
 						++argi;
 					}
 				}
@@ -923,9 +923,9 @@ partial class Program
 			{
 				var arg = args[argi];
 				// we can assume this is the last ordinal item in the list
-				if (!arg.StartsWith(prefix))
+				if (arg.Key || !arg.Value.StartsWith(prefix))
 				{
-					info.SetMemberValue(info.InstantiateItem(arg));
+					info.SetMemberValue(info.InstantiateItem(arg.Value));
 					++argi;
 					++infosi;
 				}
@@ -934,11 +934,11 @@ partial class Program
 			{
 				// required
 				var arg = args[argi];
-				if (arg.StartsWith(prefix))
+				if (!arg.Key && arg.Value.StartsWith(prefix))
 				{
 					throw new ArgumentException(string.Format("Missing required argument <{0}>", info.ItemName));
 				}
-				info.SetMemberValue(info.InstantiateItem(arg));
+				info.SetMemberValue(info.InstantiateItem(arg.Value));
 				++argi;
 				++infosi;
 			}
@@ -947,48 +947,48 @@ partial class Program
 		{
 			throw new ArgumentException(string.Format("Missing required argument <{0}>", infos[argi].ItemName));
 		}
-		HashSet<string> seen = new HashSet<string>(args.Length);
-		while (argi < args.Length)
+		HashSet<string> seen = new HashSet<string>(args.Count);
+		while (argi < args.Count)
 		{
 			var arg = args[argi];
-			if (!arg.StartsWith(prefix))
+			if (arg.Key || !arg.Value.StartsWith(prefix))
 			{
 				throw new ArgumentException(string.Format("Unexpected value while looking for a {0} switch", prefix));
 			}
-			var infoIdx = _IndexOfArgInfo(infos, prefix, arg);
+			var infoIdx = _IndexOfArgInfo(infos, prefix, arg.Value);
 			if (infoIdx < 0)
 			{
 				throw new ArgumentException(string.Format("Unrecognized switch: {0}", arg));
 			}
-			if (!seen.Add(arg))
+			if (!seen.Add(arg.Value))
 			{
 				throw new ArgumentException(string.Format("Duplicate switch: {0}", arg));
 			}
 			var info = infos[infoIdx];
 			++argi;
-			arg = argi < args.Length ? args[argi] : null;
+			arg = argi < args.Count ? args[argi] : new KeyValuePair<bool, string>(false, null);
 			if (info.HasArgument)
 			{
 				if (info.IsArray || info.IsCollection)
 				{
-					if (arg.StartsWith(prefix))
+					if (!arg.Key && arg.Value.StartsWith(prefix))
 					{
 						throw new ArgumentException(string.Format("Expected <{0}> before {1}", info.ItemName, arg));
 					}
 					info.BeginList();
-					info.AddToList(arg);
+					info.AddToList(arg.Value);
 					++argi;
-					while (argi < args.Length && !args[argi].StartsWith(prefix))
+					while (argi < args.Count && (args[argi].Key || !args[argi].Value.StartsWith(prefix)))
 					{
 						arg = args[argi];
-						info.AddToList(arg);
+						info.AddToList(arg.Value);
 						++argi;
 
 					}
 				}
 				else
 				{
-					info.SetMemberValue(info.InstantiateItem(arg));
+					info.SetMemberValue(info.InstantiateItem(arg.Value));
 					++argi;
 				}
 			}
@@ -1009,10 +1009,10 @@ partial class Program
 	}
 	#endregion // _ParseArguments
 	#region CrackCommandLine
-	internal static string[] CrackCommandLine(string commandLine, out string exename, char esc = '\\')
+	internal static List<KeyValuePair<bool, string>> CrackCommandLine(string commandLine, out string exename, char esc = '\\')
 	{
 		exename = null;
-		var result = new List<string>();
+		var result = new List<KeyValuePair<bool, string>>();
 		var i = 0;
 		var inQuote = false;
 		var sb = new StringBuilder();
@@ -1045,7 +1045,7 @@ partial class Program
 						}
 						else
 						{
-							result.Add(sb.ToString());
+							result.Add(new KeyValuePair<bool, string>(false, sb.ToString()));
 						}
 						sb.Clear();
 					}
@@ -1072,11 +1072,12 @@ partial class Program
 					}
 					else
 					{
-						result.Add(sb.ToString());
+						result.Add(new KeyValuePair<bool, string>(true, sb.ToString()));
 					}
 					sb.Clear();
 					inQuote = false;
 					++i;
+					continue;
 				}
 				sb.Append(commandLine[i]);
 				++i;
@@ -1090,10 +1091,10 @@ partial class Program
 			}
 			else
 			{
-				result.Add(sb.ToString());
+				result.Add(new KeyValuePair<bool, string>(inQuote, sb.ToString()));
 			}
 		}
-		return result.ToArray();
+		return result;
 	}
 	#endregion // CrackCommandLine
 
@@ -1358,9 +1359,24 @@ partial class Program
 	static int Main(string[] args)
 	{
 		var prefix = "--";
-		if (Environment.OSVersion.Platform==PlatformID.Win32NT)
+		if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 		{
 			prefix = "/";
+		}
+		var cl = Environment.CommandLine;
+		string exename;
+		var clargs = CrackCommandLine(cl, out exename);
+		if (clargs.Count >= args.Length)
+		{
+			clargs = clargs.GetRange(clargs.Count - args.Length, args.Length);
+		}
+		else
+		{
+			clargs.Clear();
+			for (int i = 0; i < args.Length; i++)
+			{
+				clargs.Add(new KeyValuePair<bool, string>(false, args[i]));
+			}
 		}
 #if !DEBUG
 		var parsedArgs = false;
@@ -1374,7 +1390,7 @@ partial class Program
 				_PrintUsage(Console.Out, prefix, argInfos);
 				return 0;
 			}
-			_ParseArguments(args, prefix, argInfos);
+			_ParseArguments(clargs, prefix, argInfos);
 #if !DEBUG
 			parsedArgs = true;
 #endif
@@ -1387,7 +1403,7 @@ partial class Program
 			{
 				if (argInfos != null)
 				{
-					_PrintUsage(Console.Error, prefix, argInfos);
+					_PrintUsage(Console.Error,prefix, argInfos);
 				}
 			}
 			Console.Error.WriteLine("Error: {0}", ex.Message);
