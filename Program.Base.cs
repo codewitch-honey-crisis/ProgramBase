@@ -1182,7 +1182,7 @@ partial class Program
 			}
 			if (!string.IsNullOrWhiteSpace(Info.Copyright))
 			{
-				sb.Append(" ");
+				sb.Append(' ');
 				sb.Append(Info.Copyright.Trim());
 			}
 			sb.AppendLine();
@@ -1198,7 +1198,7 @@ partial class Program
 		sb.Clear();
 		sb.Append("Usage: ");
 		sb.Append(Path.GetFileNameWithoutExtension(Info.Filename));
-		sb.Append(" ");
+		sb.Append(' ');
 		int nameLen = 4;
 		for (int i = 0; i < arguments.Count; ++i)
 		{
@@ -1215,7 +1215,7 @@ partial class Program
 			{
 				if (info.IsOptional)
 				{
-					sb.Append("[");
+					sb.Append('[');
 				}
 				sb.Append(prefix);
 				sb.Append(info.Name);
@@ -1224,14 +1224,14 @@ partial class Program
 			{
 				if (info.IsOptional)
 				{
-					sb.Append("[");
+					sb.Append('[');
 				}
 			}
 			if (info.HasArgument)
 			{
 				if (info.Ordinal < 0)
 				{
-					sb.Append(" ");
+					sb.Append(' ');
 				}
 				if (info.IsCollection || info.IsArray)
 				{
@@ -1251,7 +1251,7 @@ partial class Program
 						sb.Append(info.ItemName);
 						sb.Append("N>]");
 					}
-					sb.Append("}");
+					sb.Append('}');
 				}
 				else
 				{
@@ -1262,7 +1262,7 @@ partial class Program
 			}
 			if (info.IsOptional)
 			{
-				sb.Append("]");
+				sb.Append(']');
 			}
 		}
 		w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
@@ -1274,7 +1274,7 @@ partial class Program
 			var info = arguments[i];
 			sb.Append("  <");
 			sb.Append(info.ItemName);
-			sb.Append(">");
+			sb.Append('>');
 			sb.Append(new string(' ', (nameLen - info.ItemName.Length) + 1));
 			if (!string.IsNullOrEmpty(info.Description))
 			{
@@ -1285,7 +1285,7 @@ partial class Program
 				sb.Append("The input file");
 				if (info.IsArray || info.IsCollection)
 				{
-					sb.Append("s");
+					sb.Append('s');
 				}
 			}
 			else if (info.IsTextWriter)
@@ -1293,7 +1293,7 @@ partial class Program
 				sb.Append("The output file");
 				if (info.IsArray || info.IsCollection)
 				{
-					sb.Append("s");
+					sb.Append('s');
 				}
 			}
 			w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
@@ -1353,7 +1353,7 @@ partial class Program
 		_ProgressBuffer.Clear();
 		if (update)
 			_ProgressBuffer.Append(_ProgressBack);
-		_ProgressBuffer.Append("[");
+		_ProgressBuffer.Append('[');
 		var p = (int)((percent / 10f) + .5f);
 		for (var i = 0; i < 10; ++i)
 		{
@@ -1382,13 +1382,13 @@ partial class Program
 		{
 			for(int i = 0;i<clargs.Count-args.Length;++i)
 			{
-				sb.Append(" ");
+				sb.Append(' ');
 				var clarg = clargs[i];
 				if(clarg.Key)
 				{
-					sb.Append("\"");
+					sb.Append('"');
 					sb.Append(clarg.Value.Replace("\"", "\"\""));
-					sb.Append("\"");
+					sb.Append('"');
 				} else
 				{
 					sb.Append(clarg.Value);
@@ -1396,7 +1396,7 @@ partial class Program
 			}
 		}
 		Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion(),sb.ToString());
-		if(clargs.Count>=args.Length)
+		if (clargs.Count >= args.Length)
 		{
 			clargs = clargs.GetRange(clargs.Count - args.Length, args.Length);
 		} else
