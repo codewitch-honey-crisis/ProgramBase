@@ -254,6 +254,9 @@ partial class Program
 		public bool IsProperty;
 		public bool IsTextReader;
 		public bool IsTextWriter;
+		public bool IsFileSystemInfo;
+		public bool IsDirectoryInfo;
+		public bool IsFileInfo;
 		public bool HasArgument {
 			get { return ElementType != typeof(bool); }
 		}
@@ -418,6 +421,33 @@ partial class Program
 			{
 				return new _DeferredTextWriter(input);
 			}
+			if(IsFileInfo)
+			{
+				return new FileInfo(input);
+			} else if(IsDirectoryInfo)
+			{
+				return new DirectoryInfo(input);
+			} else if(IsFileSystemInfo)
+			{
+				if(input.LastIndexOfAny(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar } )==input.Length-1)
+				{
+					return new DirectoryInfo(input);
+				} else
+				{
+					try
+					{
+						if (Directory.Exists(input))
+						{
+							return new DirectoryInfo(input);
+						}
+					}
+					catch
+					{
+
+					}
+					return new FileInfo(input);
+				}
+			}
 			if (Parse != null)
 			{
 				try
@@ -481,6 +511,64 @@ partial class Program
 				result = false;
 		}
 		catch { }
+		return result;
+	}
+	/// <summary>
+	/// Indicates whether outputfile doesn't exist or is old
+	/// </summary>
+	/// <param name="inputfile">The master file to check the date of</param>
+	/// <param name="outputfile">The output file which is compared against <paramref name="inputfile"/></param>
+	/// <returns>True if <paramref name="outputfile"/> doesn't exist or is older than <paramref name="inputfile"/></returns>
+	public static bool IsStale(FileSystemInfo inputfile, FileSystemInfo outputfile)
+	{
+		var result = true;
+		// File.Exists doesn't always work right
+		try
+		{
+			if (File.GetLastWriteTimeUtc(outputfile.FullName) >= File.GetLastWriteTimeUtc(inputfile.FullName))
+				result = false;
+		}
+		catch { }
+		return result;
+	}
+	/// <summary>
+	/// Indicates whether <paramref name="outputfile"/>'s file doesn't exist or is old
+	/// </summary>
+	/// <param name="inputfiles">The master files to check the date of</param>
+	/// <param name="outputfile">The output file which is compared against each of the <paramref name="inputfiles"/></param>
+	/// <returns>True if <paramref name="outputfile"/> doesn't exist or is older than <paramref name="inputfiles"/> or if any don't refer to a file</returns>
+	public static bool IsStale(IEnumerable<FileSystemInfo> inputfiles, FileSystemInfo outputfile)
+	{
+		var result = true;
+		foreach (var input in inputfiles)
+		{
+			result = false;
+			if (IsStale(input, outputfile))
+			{
+				result = true;
+				break;
+			}
+		}
+		return result;
+	}
+	/// <summary>
+	/// Indicates whether <paramref name="outputfile"/>'s file doesn't exist or is old
+	/// </summary>
+	/// <param name="inputfiles">The master files to check the date of</param>
+	/// <param name="outputfile">The output file which is compared against each of the <paramref name="inputfiles"/></param>
+	/// <returns>True if <paramref name="outputfile"/> doesn't exist or is older than <paramref name="inputfiles"/> or if any don't refer to a file</returns>
+	public static bool IsStale(IEnumerable<FileInfo> inputfiles, FileInfo outputfile)
+	{
+		var result = true;
+		foreach (var input in inputfiles)
+		{
+			result = false;
+			if (IsStale(input, outputfile))
+			{
+				result = true;
+				break;
+			}
+		}
 		return result;
 	}
 	/// <summary>
@@ -787,6 +875,17 @@ partial class Program
 					
 				}
 			}
+			if(a.ElementType==typeof(DirectoryInfo))
+			{
+				a.IsDirectoryInfo = true;
+			} else if(a.ElementType==typeof(FileInfo))
+			{
+				a.IsFileInfo = true;
+			} else if (a.ElementType == typeof(FileSystemInfo))
+			{
+				a.IsFileSystemInfo = true;
+			}
+
 			if (string.IsNullOrWhiteSpace(cmdArgAttr.ItemName))
 			{
 				if (a.IsTextReader)
