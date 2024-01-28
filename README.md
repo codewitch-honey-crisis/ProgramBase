@@ -109,12 +109,12 @@ wrap v1.0
 
 Usage: wrap [{<infile1> <infileN>}] [/ifstale] [/output <outfile>] [/width <columns>]
 
-  <infile>  The input text file to wrap. Defaults to <stdin>
+  <infile>  The output files - defaults to <stdin>
   <ifstale> Skip if the input file is older than the output file
-  <outfile> The ouput text file to create. Defaults to <stdout>
+  <outfile> The output file - defaults to <stdout>
   <columns> The width to wrap. Defaults based on console window size
 - or -
-  /?        Displays this screen and exits
+  /help    Displays this screen and exits
 ```
 and like this on other operating systems
 ```
@@ -124,12 +124,11 @@ wrap v1.0
 
 Usage: wrap [{<infile1> <infileN>}] [--ifstale] [--output <outfile>] [--width <columns>]
 
-  <infile>  The input text file to wrap. Defaults to <stdin>
+  <infile>  The output files - defaults to <stdin>
   <ifstale> Skip if the input file is older than the output file
-  <outfile> The ouput text file to create. Defaults to <stdout>
+  <outfile> The output file - defaults to <stdout>
   <columns> The width to wrap. Defaults based on console window size
 - or -
   --help    Displays this screen and exits
-
-  ```
+```
 That's all built for you from the above. Note the automatic file management.
