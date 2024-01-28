@@ -730,6 +730,31 @@ partial class Program
 					if (a.IsArray || a.IsCollection)
 					{
 						a.Description += "s";
+						object first = null;
+						foreach (object item in (System.Collections.IEnumerable)a.GetMemberValue())
+						{
+							first = item;
+							break;
+						}
+						if (first == Console.Out)
+						{
+							a.Description += " - defaults to <stdout>";
+						}
+						else if (first == Console.Error)
+						{
+							a.Description += " - defaults to <stderr>";
+						}
+						
+					} else
+					{
+						var obj = a.GetMemberValue();
+						if (obj==Console.Out)
+						{
+							a.Description += " - defaults to <stdout>";
+						} else if(obj==Console.Error)
+						{
+							a.Description += " - defaults to <stderr>";
+						}
 					}
 				}
 			}
@@ -738,11 +763,28 @@ partial class Program
 				a.IsTextWriter = false;
 				if (a.IsTextReader && string.IsNullOrWhiteSpace(a.Description))
 				{
-					a.Description = "The input file";
+					a.Description = "The output file";
 					if (a.IsArray || a.IsCollection)
 					{
 						a.Description += "s";
+						object first = null;
+						foreach (object item in (System.Collections.IEnumerable)a.GetMemberValue())
+						{
+							first = item;
+							break;
+						}
+						if (first == Console.In)
+						{
+							a.Description += " - defaults to <stdin>";
+						}
+					} else
+					{
+						if (a.GetMemberValue()== Console.In)
+						{
+							a.Description += " - defaults to <stdin>";
+						}
 					}
+					
 				}
 			}
 			if (string.IsNullOrWhiteSpace(cmdArgAttr.ItemName))
