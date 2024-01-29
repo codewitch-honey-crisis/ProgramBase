@@ -819,10 +819,14 @@ partial class Program
 					{
 						a.Description += "s";
 						object first = null;
-						foreach (object item in (System.Collections.IEnumerable)a.GetMemberValue())
+						var co = (System.Collections.IEnumerable)a.GetMemberValue();
+						if (co != null)
 						{
-							first = item;
-							break;
+							foreach (object item in co)
+							{
+								first = item;
+								break;
+							}
 						}
 						if (first == Console.Out)
 						{
@@ -856,10 +860,14 @@ partial class Program
 					{
 						a.Description += "s";
 						object first = null;
-						foreach (object item in (System.Collections.IEnumerable)a.GetMemberValue())
+						var co = (System.Collections.IEnumerable)a.GetMemberValue();
+						if (co != null)
 						{
-							first = item;
-							break;
+							foreach (object item in co)
+							{
+								first = item;
+								break;
+							}
 						}
 						if (first == Console.In)
 						{
