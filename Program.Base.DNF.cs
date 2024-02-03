@@ -859,7 +859,7 @@ partial class Program
 				a.IsTextWriter = false;
 				if (a.IsTextReader && string.IsNullOrWhiteSpace(a.Description))
 				{
-					a.Description = "The output file";
+					a.Description = "The input file";
 					if (a.IsArray || a.IsCollection)
 					{
 						a.Description += "s";
