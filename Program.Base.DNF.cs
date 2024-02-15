@@ -191,8 +191,10 @@ partial class Program
 				_writer = new StreamWriter(_name, false);
 			}
 		}
-		public override Encoding Encoding {
-			get {
+		public override Encoding Encoding
+		{
+			get
+			{
 				if (_writer == null)
 				{
 					return Encoding.UTF8;
@@ -204,8 +206,10 @@ partial class Program
 		{
 			_name = path;
 		}
-		public string Name {
-			get {
+		public string Name
+		{
+			get
+			{
 				return _name;
 			}
 		}
@@ -256,13 +260,16 @@ partial class Program
 		public bool IsFileSystemInfo;
 		public bool IsDirectoryInfo;
 		public bool IsFileInfo;
-		public bool HasArgument {
+		public bool HasArgument
+		{
 			get { return ElementType != typeof(bool); }
 		}
 		public Type Type;
 		public Type ElementType;
-		public bool IsCollection {
-			get {
+		public bool IsCollection
+		{
+			get
+			{
 				return ColAdd != null && ColClear != null;
 			}
 		}
@@ -1591,7 +1598,7 @@ partial class Program
 			{
 				if (argInfos != null)
 				{
-					_PrintUsage(Console.Error, prefix, argInfos);
+					_PrintUsage(Console.Error,prefix, argInfos);
 				}
 			}
 			Console.Error.WriteLine("Error: {0}", ex.Message);

@@ -192,8 +192,10 @@ partial class Program
 				_writer = new StreamWriter(_name, false);
 			}
 		}
-		public override Encoding Encoding {
-			get {
+		public override Encoding Encoding
+		{
+			get
+			{
 				if (_writer == null)
 				{
 					return Encoding.UTF8;
@@ -205,8 +207,10 @@ partial class Program
 		{
 			_name = path;
 		}
-		public string Name {
-			get {
+		public string Name
+		{
+			get
+			{
 				return _name;
 			}
 		}
@@ -257,13 +261,16 @@ partial class Program
 		public bool IsFileSystemInfo;
 		public bool IsDirectoryInfo;
 		public bool IsFileInfo;
-		public bool HasArgument {
+		public bool HasArgument
+		{
 			get { return ElementType != typeof(bool); }
 		}
 		public Type Type;
 		public Type ElementType;
-		public bool IsCollection {
-			get {
+		public bool IsCollection
+		{
+			get
+			{
 				return ColAdd != null && ColClear != null;
 			}
 		}
@@ -421,18 +428,21 @@ partial class Program
 			{
 				return new _DeferredTextWriter(input);
 			}
-			if(IsFileInfo)
+			if (IsFileInfo)
 			{
 				return new FileInfo(input);
-			} else if(IsDirectoryInfo)
+			}
+			else if (IsDirectoryInfo)
 			{
 				return new DirectoryInfo(input);
-			} else if(IsFileSystemInfo)
+			}
+			else if (IsFileSystemInfo)
 			{
-				if(input.LastIndexOfAny(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar } )==input.Length-1)
+				if (input.LastIndexOfAny(new char[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) == input.Length - 1)
 				{
 					return new DirectoryInfo(input);
-				} else
+				}
+				else
 				{
 					try
 					{
@@ -836,14 +846,16 @@ partial class Program
 						{
 							a.Description += " - defaults to <stderr>";
 						}
-						
-					} else
+
+					}
+					else
 					{
 						var obj = a.GetMemberValue();
-						if (obj==Console.Out)
+						if (obj == Console.Out)
 						{
 							a.Description += " - defaults to <stdout>";
-						} else if(obj==Console.Error)
+						}
+						else if (obj == Console.Error)
 						{
 							a.Description += " - defaults to <stderr>";
 						}
@@ -873,23 +885,26 @@ partial class Program
 						{
 							a.Description += " - defaults to <stdin>";
 						}
-					} else
+					}
+					else
 					{
-						if (a.GetMemberValue()== Console.In)
+						if (a.GetMemberValue() == Console.In)
 						{
 							a.Description += " - defaults to <stdin>";
 						}
 					}
-					
+
 				}
 			}
-			if(a.ElementType==typeof(DirectoryInfo))
+			if (a.ElementType == typeof(DirectoryInfo))
 			{
 				a.IsDirectoryInfo = true;
-			} else if(a.ElementType==typeof(FileInfo))
+			}
+			else if (a.ElementType == typeof(FileInfo))
 			{
 				a.IsFileInfo = true;
-			} else if (a.ElementType == typeof(FileSystemInfo))
+			}
+			else if (a.ElementType == typeof(FileSystemInfo))
 			{
 				a.IsFileSystemInfo = true;
 			}
@@ -1011,7 +1026,7 @@ partial class Program
 	}
 	#endregion // _ReflectArguments
 	#region _IndexOfArgInfo
-	static int _IndexOfArgInfo(IList<_ArgInfo> infos,string prefix, string arg)
+	static int _IndexOfArgInfo(IList<_ArgInfo> infos, string prefix, string arg)
 	{
 		if (string.IsNullOrEmpty(arg) || !arg.StartsWith(prefix)) { return -1; }
 		arg = arg.Substring(prefix.Length);
@@ -1028,7 +1043,7 @@ partial class Program
 	}
 	#endregion // _IndexOfArgInfo
 	#region _ParseArguments
-	static void _ParseArguments(IList<KeyValuePair<bool,string>> args, string prefix,IList<_ArgInfo> infos)
+	static void _ParseArguments(IList<KeyValuePair<bool, string>> args, string prefix, IList<_ArgInfo> infos)
 	{
 		// parse the ordinal arguments
 		int argi = 0;
@@ -1107,9 +1122,9 @@ partial class Program
 			var arg = args[argi];
 			if (arg.Key || !arg.Value.StartsWith(prefix))
 			{
-				throw new ArgumentException(string.Format("Unexpected value while looking for a {0} switch",prefix));
+				throw new ArgumentException(string.Format("Unexpected value while looking for a {0} switch", prefix));
 			}
-			var infoIdx = _IndexOfArgInfo(infos,prefix, arg.Value);
+			var infoIdx = _IndexOfArgInfo(infos, prefix, arg.Value);
 			if (infoIdx < 0)
 			{
 				throw new ArgumentException(string.Format("Unrecognized switch: {0}", arg));
@@ -1120,7 +1135,7 @@ partial class Program
 			}
 			var info = infos[infoIdx];
 			++argi;
-			arg = argi < args.Count ? args[argi] : new KeyValuePair<bool, string>(false,null);
+			arg = argi < args.Count ? args[argi] : new KeyValuePair<bool, string>(false, null);
 			if (info.HasArgument)
 			{
 				if (info.IsArray || info.IsCollection)
@@ -1163,10 +1178,10 @@ partial class Program
 	}
 	#endregion // _ParseArguments
 	#region CrackCommandLine
-	internal static List<KeyValuePair<bool,string>> CrackCommandLine(string commandLine, out string exename, char esc = '\\')
+	internal static List<KeyValuePair<bool, string>> CrackCommandLine(string commandLine, out string exename, char esc = '\\')
 	{
 		exename = null;
-		var result = new List<KeyValuePair<bool,string>>();
+		var result = new List<KeyValuePair<bool, string>>();
 		var i = 0;
 		var inQuote = false;
 		var sb = new StringBuilder();
@@ -1316,9 +1331,9 @@ partial class Program
 		{
 			prefix = "/";
 		}
-		_PrintUsage(Console.Error,prefix, _ReflectArguments(typeof(Program)));
+		_PrintUsage(Console.Error, prefix, _ReflectArguments(typeof(Program)));
 	}
-	private static void _PrintUsage(TextWriter w, string prefix,IList<_ArgInfo> arguments)
+	private static void _PrintUsage(TextWriter w, string prefix, IList<_ArgInfo> arguments)
 	{
 		var sb = new StringBuilder();
 		if (!string.IsNullOrWhiteSpace(Info.Name) && null != Info.Version)
@@ -1448,7 +1463,7 @@ partial class Program
 			w.WriteLine(WordWrap(sb.ToString(), Console.WindowWidth, 4));
 		}
 		sb.Clear();
-		if (0 > _IndexOfArgInfo(arguments, prefix,prefix+"help"))
+		if (0 > _IndexOfArgInfo(arguments, prefix, prefix + "help"))
 		{
 			if (nameLen == 0)
 			{
@@ -1526,37 +1541,39 @@ partial class Program
 		string exename;
 		var clargs = CrackCommandLine(cl, out exename);
 		var sb = new StringBuilder();
-		sb.Append(exename); 
-		if(clargs.Count>args.Length)
+		sb.Append(exename);
+		if (clargs.Count > args.Length)
 		{
-			for(int i = 0;i<clargs.Count-args.Length;++i)
+			for (int i = 0; i < clargs.Count - args.Length; ++i)
 			{
 				sb.Append(' ');
 				var clarg = clargs[i];
-				if(clarg.Key)
+				if (clarg.Key)
 				{
 					sb.Append('"');
 					sb.Append(clarg.Value.Replace("\"", "\"\""));
 					sb.Append('"');
-				} else
+				}
+				else
 				{
 					sb.Append(clarg.Value);
 				}
 			}
 		}
-		Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion(),sb.ToString());
+		Info = new ProgramInfo(_GetCodeBase(), Path.GetFileName(_GetCodeBase()), _GetName(), _GetDescription(), _GetCopyright(), _GetVersion(), sb.ToString());
 		if (clargs.Count >= args.Length)
 		{
 			clargs = clargs.GetRange(clargs.Count - args.Length, args.Length);
-		} else
+		}
+		else
 		{
 			clargs.Clear();
-			for(int i = 0;i<args.Length;i++)
+			for (int i = 0; i < args.Length; i++)
 			{
 				clargs.Add(new KeyValuePair<bool, string>(false, args[i]));
 			}
 		}
-		
+
 #if !DEBUG
 		var parsedArgs = false;
 #endif // !DEBUG
@@ -1564,12 +1581,12 @@ partial class Program
 		try
 		{
 			argInfos = _ReflectArguments(typeof(Program));
-			if (args.Length == 1 && (args[0] == prefix+"help" || args[0]==prefix+"?"))
+			if (args.Length == 1 && (args[0] == prefix + "help" || args[0] == prefix + "?"))
 			{
-				_PrintUsage(Console.Out, prefix,argInfos);
+				_PrintUsage(Console.Out, prefix, argInfos);
 				return 0;
 			}
-			_ParseArguments(clargs, prefix,argInfos);
+			_ParseArguments(clargs, prefix, argInfos);
 #if !DEBUG
 			parsedArgs = true;
 #endif
