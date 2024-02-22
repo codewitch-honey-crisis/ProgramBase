@@ -189,7 +189,7 @@ partial class Program
 		{
 			if (_writer == null)
 			{
-				_writer = new StreamWriter(_name, false);
+				_writer = new StreamWriter(_name, false, Encoding.UTF8);
 			}
 		}
 		public override Encoding Encoding
@@ -1199,7 +1199,7 @@ partial class Program
 					}
 				}
 				var ws = false;
-				while (char.IsWhiteSpace(commandLine[i]))
+				while (i < commandLine.Length && char.IsWhiteSpace(commandLine[i]))
 				{
 					ws = true;
 					++i;

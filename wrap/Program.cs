@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 internal partial class Program
 {
 	// you don't need this field, but if you have it
@@ -9,9 +10,9 @@ internal partial class Program
 	// that the field is being reflected upon.
 	#pragma warning disable CS0414
 	private static int ExitCode = 0;
-	#pragma warning restore
+#pragma warning restore
 	[CmdArg(Ordinal = 0)] // the description and itemname are filled
-	static List<TextReader> Inputs = new List<TextReader>() { Console.In };
+	static List<WebResponse> Inputs = new List<WebResponse>();
 	[CmdArg(Name = "output")] // the description and itemname are filled
 	static TextWriter Output = Console.Out;
 	[CmdArg(Name = "width", Description = "The width to wrap. Defaults based on console window size", ItemName = "columns")]
@@ -20,9 +21,14 @@ internal partial class Program
 	static bool IfStale = false;
 	static void Run()
 	{
-		if (!IfStale || IsStale(Inputs, Output))
+		var inputReaders = new List<TextReader>();
+		foreach(var input in Inputs)
 		{
-			foreach (var input in Inputs)
+			inputReaders.Add(new StreamReader(input.GetResponseStream()));
+		}
+		if (!IfStale || IsStale(inputReaders, Output))
+		{
+			foreach (var input in inputReaders)
 			{
 				// do this because stdin requires it
 				string line;

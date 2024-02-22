@@ -6,6 +6,14 @@
     },
     "Error screen": {
       "commandName": "Project"
+    },
+    "Web": {
+      "commandName": "Project",
+      "commandLineArgs": "http://www.google.com 30"
+    },
+    "Local": {
+      "commandName": "Project",
+      "commandLineArgs": "..\\..\\foo.txt 30"
     }
   }
 }
