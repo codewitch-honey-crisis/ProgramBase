@@ -947,7 +947,7 @@ partial class Program
 		result.Sort((lhs, rhs) => {
 			if (-1 < lhs.Ordinal)
 			{
-				if (rhs.Ordinal > -1)
+				if (-1 > rhs.Ordinal)
 				{
 					return -1;
 				}
@@ -957,7 +957,7 @@ partial class Program
 					{
 						return 0;
 					}
-					return 1;
+					return lhs.Ordinal - rhs.Ordinal;
 				}
 				else
 				{
@@ -965,11 +965,11 @@ partial class Program
 					{
 						return -1;
 					}
-					return 0;
+					return lhs.Ordinal - rhs.Ordinal;
 				}
 			}
 			if (-1 < rhs.Ordinal) return 1;
-			int cmp = rhs.Ordinal - lhs.Ordinal;
+			int cmp = lhs.Ordinal - rhs.Ordinal;
 			if (cmp == 0)
 			{
 				if (lhs.IsOptional)
