@@ -1096,8 +1096,9 @@ partial class Program
 				{
 					info.SetMemberValue(info.InstantiateItem(arg.Value));
 					++argi;
-					++infosi;
 				}
+
+				++infosi;
 			}
 			else
 			{
